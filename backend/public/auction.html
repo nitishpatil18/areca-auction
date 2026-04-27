@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Areca Auction Live Demo</title>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+  body { font-family: ui-monospace, monospace; max-width: 720px; margin: 24px auto; padding: 0 16px; color: #111; }
+  h2 { margin-top: 24px; }
+  .row { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+  input, button { padding: 8px 10px; font: inherit; }
+  input { flex: 1; min-width: 200px; border: 1px solid #ccc; border-radius: 4px; }
+  button { background: #111; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
+  button:disabled { background: #999; cursor: not-allowed; }
+  .panel { border: 1px solid #ddd; padding: 12px; border-radius: 6px; margin: 12px 0; }
+  .price { font-size: 28px; font-weight: 700; }
+  .log { font-size: 12px; max-height: 280px; overflow: auto; background: #f6f6f6; padding: 8px; border-radius: 4px; }
+  .ok { color: #0a7; }
+  .err { color: #c33; }
+  .muted { color: #666; }
+</style>
+</head>
+<body>
+
+<h1>Areca auction live demo</h1>
+<p class="muted">two tabs, two buyers, one auction. open this page twice with different logins.</p>
+
+<div class="panel">
+  <h2>1. login</h2>
+  <div class="row">
+    <input id="email" placeholder="email" value="nitish@test.com" />
+    <input id="password" type="password" placeholder="password" value="password123" />
+    <button id="loginBtn">login</button>
+  </div>
+  <div id="who" class="muted">not logged in</div>
+</div>
+
+<div class="panel">
+  <h2>2. join auction</h2>
+  <div class="row">
+    <input id="auctionId" placeholder="auction id (paste here)" />
+    <button id="joinBtn" disabled>join</button>
+  </div>
+  <div id="auctionInfo" class="muted">no auction joined</div>
+</div>
+
+<div class="panel">
+  <h2>3. live state</h2>
+  <div>current bid (per kg): <span id="currentBid" class="price">-</span></div>
+  <div>highest bidder: <span id="highest">-</span></div>
+  <div>bid count: <span id="count">0</span></div>
+  <div>time left: <span id="timer">-</span></div>
+</div>
+
+<div class="panel">
+  <h2>4. place bid</h2>
+  <div class="row">
+    <input id="bidAmount" type="number" step="0.01" placeholder="price per kg" />
+    <button id="bidBtn" disabled>place bid</button>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>log</h2>
+  <div id="log" class="log"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const log = (msg, cls = '') => {
+  const t = new Date().toLocaleTimeString();
+  $('log').innerHTML = `<div class="${cls}">[${t}] ${msg}</div>` + $('log').innerHTML;
+};
+
+let token = null;
+let user = null;
+let socket = null;
+let auctionId = null;
+let endAt = null;
+let timerInterval = null;
+
+$('loginBtn').onclick = async () => {
+  const email = $('email').value.trim();
+  const password = $('password').value;
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'login failed');
+    token = data.token;
+    user = data.user;
+    $('who').textContent = `${user.name} (${user.role}) — balance ${user.walletBalance}`;
+    $('joinBtn').disabled = false;
+    log('logged in', 'ok');
+  } catch (e) { log('login error: ' + e.message, 'err'); }
+};
+
+$('joinBtn').onclick = async () => {
+  auctionId = $('auctionId').value.trim();
+  if (!auctionId) return;
+
+  try {
+    const res = await fetch('/api/auctions/' + auctionId);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'fetch failed');
+    const a = data.auction;
+    endAt = new Date(a.endAt);
+    $('auctionInfo').textContent =
+      `${a.lot?.variety || '?'} grade ${a.lot?.grade || '?'} | ${a.lot?.weightKg || '?'}kg | ` +
+      `base ${a.basePricePerKg}/kg | ends ${endAt.toLocaleTimeString()} | status ${a.status}`;
+    $('currentBid').textContent = a.currentBidPerKg || a.basePricePerKg;
+    $('highest').textContent = a.highestBidder?.name || '-';
+    $('count').textContent = a.bidCount;
+  } catch (e) { log('auction fetch error: ' + e.message, 'err'); return; }
+
+  if (socket) socket.disconnect();
+  socket = io({ auth: { token } });
+
+  socket.on('connect', () => { log('socket connected', 'ok'); });
+  socket.on('connect_error', (e) => log('socket error: ' + e.message, 'err'));
+  socket.on('disconnect', () => log('socket disconnected'));
+
+  socket.emit('auction:join', auctionId);
+
+  socket.on('bid:new', (e) => {
+    if (e.auctionId !== auctionId) return;
+    $('currentBid').textContent = e.pricePerKg;
+    $('count').textContent = e.bidCount;
+    $('highest').textContent = e.highestBidder === user.id ? `you (${user.name})` : e.highestBidder;
+    log(`new bid ${e.pricePerKg}/kg by ${e.highestBidder}`, 'ok');
+  });
+
+  socket.on('auction:closed', (e) => {
+    if (e.auctionId !== auctionId) return;
+    log(`auction closed. winner=${e.winner} final=${e.finalPricePerKg}/kg total=${e.finalAmount}`, 'ok');
+    $('bidBtn').disabled = true;
+    if (timerInterval) clearInterval(timerInterval);
+    $('timer').textContent = 'ended';
+  });
+
+  socket.on('auction:started', (e) => {
+    if (e.auctionId !== auctionId) return;
+    endAt = new Date(e.endAt);
+    log('auction started', 'ok');
+  });
+
+  $('bidBtn').disabled = false;
+
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    if (!endAt) return;
+    const ms = endAt.getTime() - Date.now();
+    if (ms <= 0) { $('timer').textContent = 'ended'; clearInterval(timerInterval); return; }
+    const s = Math.floor(ms / 1000);
+    $('timer').textContent = `${Math.floor(s / 60)}m ${s % 60}s`;
+  }, 250);
+};
+
+$('bidBtn').onclick = () => {
+  const pricePerKg = Number($('bidAmount').value);
+  if (!pricePerKg) return;
+  socket.emit('bid:place', { auctionId, pricePerKg }, (resp) => {
+    if (resp?.ok) log(`bid accepted at ${pricePerKg}/kg`, 'ok');
+    else log('bid rejected: ' + (resp?.error || 'unknown'), 'err');
+  });
+};
+</script>
+</body>
+</html>

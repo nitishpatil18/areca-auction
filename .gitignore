@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+
+# env files (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# build outputs
+dist/
+build/
+out/
+
+# logs
+*.log
+npm-debug.log*
+
+# os
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
+
+# hardhat
+artifacts/
+cache/
+typechain-types/
+
+# coverage
+coverage/
+
+# misc
+.cache/
+*.tsbuildinfo
