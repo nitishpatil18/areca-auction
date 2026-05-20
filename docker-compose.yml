@@ -4,7 +4,7 @@ services:
     container_name: areca-mongo
     restart: unless-stopped
     ports:
-      - "27018:27017"   # host:container — host 27018 avoids local mongod conflict
+      - "27018:27017"
     volumes:
       - mongo-data:/data/db
     networks:
@@ -16,6 +16,39 @@ services:
       retries: 5
       start_period: 10s
 
+  hardhat:
+    build:
+      context: ./blockchain
+      dockerfile: Dockerfile
+    image: areca-hardhat:dev
+    container_name: areca-hardhat
+    restart: unless-stopped
+    ports:
+      - "8545:8545"
+    networks:
+      - areca-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --post-data='{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_chainId\"}' --header='Content-Type:application/json' http://127.0.0.1:8545 | grep -q result"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  deploy:
+    image: areca-hardhat:dev
+    container_name: areca-deploy
+    depends_on:
+      hardhat:
+        condition: service_healthy
+    networks:
+      - areca-net
+    volumes:
+      - shared-data:/shared
+    environment:
+      HARDHAT_NETWORK_URL: "http://hardhat:8545"
+    command: ["npx", "hardhat", "run", "scripts/dockerInit.js", "--network", "external"]
+    restart: "no"
+
   backend:
     build:
       context: ./backend
@@ -26,16 +59,19 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+      deploy:
+        condition: service_completed_successfully
     environment:
       PORT: "8000"
       MONGO_URI: "mongodb://mongo:27017/areca"
       JWT_SECRET: "dev-secret-change-me-in-prod"
       JWT_EXPIRES: "7d"
       CORS_ORIGIN: "http://localhost:5173"
-      # chain disabled in stage 2; comes back in stage 3
       MIN_BID_INCREMENT: "1"
     ports:
       - "8000:8000"
+    volumes:
+      - shared-data:/shared:ro
     networks:
       - areca-net
 
@@ -45,3 +81,4 @@ networks:
 
 volumes:
   mongo-data:
+  shared-data:
