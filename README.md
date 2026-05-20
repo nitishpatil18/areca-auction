@@ -1,5 +1,8 @@
 # Areca Auction Platform
 
+[![backend ci](https://github.com/nitishpatil18/areca-auction/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/nitishpatil18/areca-auction/actions/workflows/backend-ci.yml)
+
+
 Real-time arecanut auction system with blockchain integration. Built as a final-year project, Computer Science and Engineering (AI & ML), Ramaiah Institute of Technology.
 
 A hybrid platform where farmers list arecanut lots, buyers bid in real-time via WebSockets, and every auction is mirrored on the Ethereum blockchain for tamper-proof records.
