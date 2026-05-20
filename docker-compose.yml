@@ -1,0 +1,47 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: areca-mongo
+    restart: unless-stopped
+    ports:
+      - "27018:27017"   # host:container — host 27018 avoids local mongod conflict
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - areca-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: areca-backend:dev
+    container_name: areca-backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      PORT: "8000"
+      MONGO_URI: "mongodb://mongo:27017/areca"
+      JWT_SECRET: "dev-secret-change-me-in-prod"
+      JWT_EXPIRES: "7d"
+      CORS_ORIGIN: "http://localhost:5173"
+      # chain disabled in stage 2; comes back in stage 3
+      MIN_BID_INCREMENT: "1"
+    ports:
+      - "8000:8000"
+    networks:
+      - areca-net
+
+networks:
+  areca-net:
+    driver: bridge
+
+volumes:
+  mongo-data:
