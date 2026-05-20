@@ -3,6 +3,8 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
   ResponsiveContainer, CartesianGrid,
 } from 'recharts';
+import { BarChart3 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import * as analyticsApi from '../api/analytics.js';
 
 const COLORS = ['#2563eb', '#16a34a', '#dc2626', '#9333ea', '#ea580c'];
@@ -12,7 +14,6 @@ export default function Analytics() {
   const [trends, setTrends] = useState({});
   const [regions, setRegions] = useState([]);
   const [activity, setActivity] = useState([]);
-  const [err, setErr] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -27,37 +28,44 @@ export default function Analytics() {
         setRegions(r.regions);
         setActivity(a.activity);
       })
-      .catch((e) => setErr(e.message));
+      .catch((e) => toast.error(e.message));
   }, []);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-      <h1 className="text-2xl font-bold">analytics</h1>
-      {err && <div className="text-red-600">{err}</div>}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+          <BarChart3 size={20} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold">Analytics</h1>
+          <p className="text-sm text-slate-500">Market trends, regional comparison, and bid activity</p>
+        </div>
+      </div>
 
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label="total lots"          value={summary.totalLots} />
-          <Stat label="total auctions"      value={summary.totalAuctions} />
-          <Stat label="closed auctions"     value={summary.closedAuctions} />
-          <Stat label="total bids"          value={summary.totalBids} />
-          <Stat label="avg final ₹/kg"      value={`₹${summary.avgClosedPricePerKg}`} />
-          <Stat label="total settled value" value={`₹${summary.totalSettledAmount.toLocaleString()}`} />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <Stat label="Total Lots"        value={summary.totalLots} />
+          <Stat label="Total Auctions"    value={summary.totalAuctions} />
+          <Stat label="Closed Auctions"   value={summary.closedAuctions} />
+          <Stat label="Total Bids"        value={summary.totalBids} />
+          <Stat label="Avg Final ₹/kg"    value={`₹${summary.avgClosedPricePerKg}`} />
+          <Stat label="Settled Value"     value={`₹${summary.totalSettledAmount.toLocaleString()}`} />
         </div>
       )}
 
-      <section className="border border-slate-200 rounded bg-white p-5">
-        <h2 className="text-lg font-semibold mb-4">price trends by variety (last 90 days)</h2>
+      <section className="card p-6">
+        <h2 className="text-lg font-semibold mb-4">Price Trends by Variety (Last 90 Days)</h2>
         <PriceTrendsChart trends={trends} />
       </section>
 
-      <section className="border border-slate-200 rounded bg-white p-5">
-        <h2 className="text-lg font-semibold mb-4">region comparison (closed auctions)</h2>
+      <section className="card p-6">
+        <h2 className="text-lg font-semibold mb-4">Regional Comparison (Closed Auctions)</h2>
         <RegionChart regions={regions} />
       </section>
 
-      <section className="border border-slate-200 rounded bg-white p-5">
-        <h2 className="text-lg font-semibold mb-4">bid activity (last 30 days)</h2>
+      <section className="card p-6">
+        <h2 className="text-lg font-semibold mb-4">Bid Activity (Last 30 Days)</h2>
         <ActivityChart activity={activity} />
       </section>
     </div>
@@ -66,7 +74,7 @@ export default function Analytics() {
 
 function Stat({ label, value }) {
   return (
-    <div className="border border-slate-200 rounded bg-white p-4">
+    <div className="card p-4">
       <div className="text-xs text-slate-500 uppercase">{label}</div>
       <div className="text-2xl font-bold mt-1">{value}</div>
     </div>
@@ -76,10 +84,9 @@ function Stat({ label, value }) {
 function PriceTrendsChart({ trends }) {
   const varieties = Object.keys(trends);
   if (varieties.length === 0) {
-    return <Empty msg="no closed auctions yet. close an auction to see price trends." />;
+    return <Empty msg="No closed auctions yet. Close an auction to see price trends." />;
   }
 
-  // merge into a single array indexed by day
   const dayMap = {};
   for (const v of varieties) {
     for (const point of trends[v]) {
@@ -106,7 +113,7 @@ function PriceTrendsChart({ trends }) {
 }
 
 function RegionChart({ regions }) {
-  if (regions.length === 0) return <Empty msg="no region data yet." />;
+  if (regions.length === 0) return <Empty msg="No region data yet." />;
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -116,15 +123,15 @@ function RegionChart({ regions }) {
         <YAxis tick={{ fontSize: 12 }} unit=" ₹/kg" width={80} />
         <Tooltip />
         <Legend />
-        <Bar dataKey="avgPrice" name="avg price ₹/kg" fill="#2563eb" />
-        <Bar dataKey="maxPrice" name="max price ₹/kg" fill="#16a34a" />
+        <Bar dataKey="avgPrice" name="Avg Price ₹/kg" fill="#2563eb" />
+        <Bar dataKey="maxPrice" name="Max Price ₹/kg" fill="#16a34a" />
       </BarChart>
     </ResponsiveContainer>
   );
 }
 
 function ActivityChart({ activity }) {
-  if (activity.length === 0) return <Empty msg="no recent bid activity." />;
+  if (activity.length === 0) return <Empty msg="No recent bid activity." />;
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -134,7 +141,7 @@ function ActivityChart({ activity }) {
         <YAxis tick={{ fontSize: 12 }} width={50} />
         <Tooltip />
         <Legend />
-        <Bar dataKey="bids" name="bids placed" fill="#9333ea" />
+        <Bar dataKey="bids" name="Bids Placed" fill="#9333ea" />
       </BarChart>
     </ResponsiveContainer>
   );

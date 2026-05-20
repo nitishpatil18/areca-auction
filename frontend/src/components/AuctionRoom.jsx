@@ -45,11 +45,11 @@ export default function AuctionRoom({ auction: initial, lot }) {
         pricePerKg: e.pricePerKg,
         amountTotal: e.pricePerKg * lot.weightKg,
         createdAt: e.at,
-        bidder: { name: wasMine ? user.name : 'someone' },
+        bidder: { name: wasMine ? user.name : 'Someone' },
       }, ...b]);
 
       if (previouslyMine && !wasMine) {
-        toast.error('you have been outbid', { icon: '⚡' });
+        toast.error('You have been outbid', { icon: '⚡' });
       }
     };
 
@@ -58,22 +58,22 @@ export default function AuctionRoom({ auction: initial, lot }) {
       setAuction((a) => ({ ...a, status: 'closed', currentBidPerKg: e.finalPricePerKg, finalAmount: e.finalAmount }));
       const wonByMe = e.winner === user?.id;
       if (wonByMe) {
-        toast.success(`you won! ₹${e.finalPricePerKg}/kg · total ₹${e.finalAmount}`, { duration: 6000 });
+        toast.success(`You won! ₹${e.finalPricePerKg}/kg · Total ₹${e.finalAmount}`, { duration: 6000 });
       } else {
-        toast(`auction closed at ₹${e.finalPricePerKg}/kg`);
+        toast(`Auction closed at ₹${e.finalPricePerKg}/kg`);
       }
     };
 
     const onStarted = (e) => {
       if (e.auctionId !== auction._id) return;
       setAuction((a) => ({ ...a, status: 'live', endAt: e.endAt }));
-      toast.success('auction is live', { icon: '🔥' });
+      toast.success('Auction is live', { icon: '🔥' });
     };
 
     const onExtended = (e) => {
       if (e.auctionId !== auction._id) return;
       setAuction((a) => ({ ...a, endAt: e.endAt }));
-      toast('⏱ auction extended · last-second bid', { icon: '🔥', duration: 4000 });
+      toast('Auction extended · last-second bid', { icon: '🔥', duration: 4000 });
     };
 
     socket.on('bid:new', onBid);
@@ -100,10 +100,10 @@ export default function AuctionRoom({ auction: initial, lot }) {
     socket.emit('bid:place', { auctionId: auction._id, pricePerKg }, (resp) => {
       setBusy(false);
       if (resp?.ok) {
-        toast.success(`bid placed at ₹${pricePerKg}/kg`);
+        toast.success(`Bid placed at ₹${pricePerKg}/kg`);
         setBidInput('');
       } else {
-        toast.error(resp?.error || 'bid rejected');
+        toast.error(resp?.error || 'Bid rejected');
       }
     });
   }
@@ -112,33 +112,43 @@ export default function AuctionRoom({ auction: initial, lot }) {
   const canBid = user?.role === 'buyer' && auction.status === 'live';
   const isLeading = auction.highestBidder?._id === user?.id;
 
+  const statusLabel = {
+    live: 'Live',
+    scheduled: 'Scheduled',
+    closed: 'Closed',
+    cancelled: 'Cancelled',
+  }[auction.status] || auction.status;
+
   return (
     <div className="card p-6">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <Gavel size={18} className="text-emerald-600" />
-          <h2 className="font-bold text-lg">live auction</h2>
+          <h2 className="font-bold text-lg">Live Auction</h2>
         </div>
-        <StatusBadge status={auction.status} />
+        <span className={`badge-${auction.status}`}>
+          {auction.status === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot" />}
+          {statusLabel}
+        </span>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <Metric icon={Trophy} label="current bid" value={`₹${auction.currentBidPerKg || auction.basePricePerKg}`} suffix="/kg" big />
-        <Metric icon={Clock}  label={auction.status === 'scheduled' ? 'starts in' : 'ends in'}
+        <Metric icon={Trophy} label="Current Bid" value={`₹${auction.currentBidPerKg || auction.basePricePerKg}`} suffix="/kg" big />
+        <Metric icon={Clock}  label={auction.status === 'scheduled' ? 'Starts In' : 'Ends In'}
           value={
             auction.status === 'live'      ? <CountdownTimer endAt={auction.endAt} /> :
             auction.status === 'scheduled' ? <CountdownTimer endAt={auction.startAt} /> :
-            'ended'
+            'Ended'
           }
         />
-        <Metric icon={Users} label="bids" value={auction.bidCount || 0} />
-        <Metric icon={Gavel} label="leader" value={auction.highestBidder?.name || '—'} />
+        <Metric icon={Users} label="Bids" value={auction.bidCount || 0} />
+        <Metric icon={Gavel} label="Leader" value={auction.highestBidder?.name || '—'} />
       </div>
 
       {isLeading && auction.status === 'live' && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 mb-4 text-sm text-emerald-800 flex items-center gap-2">
           <Trophy size={16} />
-          <span className="font-medium">you are leading this auction</span>
+          <span className="font-medium">You are leading this auction</span>
         </div>
       )}
 
@@ -146,7 +156,7 @@ export default function AuctionRoom({ auction: initial, lot }) {
         <form onSubmit={placeBid} className="flex gap-2 mb-4">
           <input
             type="number" step="0.01" min={minNext}
-            placeholder={`enter ₹/kg (min ₹${minNext})`}
+            placeholder={`Enter ₹/kg (min ₹${minNext})`}
             value={bidInput}
             onChange={(e) => setBidInput(e.target.value)}
             className="input flex-1"
@@ -154,26 +164,26 @@ export default function AuctionRoom({ auction: initial, lot }) {
           />
           <button disabled={busy} className="btn-primary">
             <Zap size={16} />
-            {busy ? 'placing…' : 'bid'}
+            {busy ? 'Placing…' : 'Bid'}
           </button>
         </form>
       ) : (
         <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 mb-4 text-sm text-slate-600 flex items-center gap-2">
           <AlertCircle size={16} />
-          {!user                          && 'sign in as a buyer to place bids'}
-          {user?.role === 'farmer'        && 'farmers cannot place bids'}
-          {user?.role === 'admin'         && 'admins cannot place bids'}
-          {user?.role === 'buyer' && auction.status !== 'live' && `bidding opens when status is live`}
+          {!user                          && 'Sign in as a buyer to place bids'}
+          {user?.role === 'farmer'        && 'Farmers cannot place bids'}
+          {user?.role === 'admin'         && 'Admins cannot place bids'}
+          {user?.role === 'buyer' && auction.status !== 'live' && 'Bidding opens when status is Live'}
         </div>
       )}
 
       <div className="border-t border-slate-200 pt-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-slate-700">bid history</h3>
+          <h3 className="text-sm font-semibold text-slate-700">Bid History</h3>
           <span className="text-xs text-slate-500">{bids.length} total</span>
         </div>
         {bids.length === 0 ? (
-          <div className="text-center py-6 text-sm text-slate-400">no bids yet · be the first</div>
+          <div className="text-center py-6 text-sm text-slate-400">No bids yet · be the first</div>
         ) : (
           <ul className="space-y-1.5 max-h-56 overflow-auto">
             {bids.slice(0, 30).map((b, i) => (
@@ -191,16 +201,6 @@ export default function AuctionRoom({ auction: initial, lot }) {
         )}
       </div>
     </div>
-  );
-}
-
-function StatusBadge({ status }) {
-  const cls = `badge-${status}`;
-  return (
-    <span className={cls}>
-      {status === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot" />}
-      {status}
-    </span>
   );
 }
 

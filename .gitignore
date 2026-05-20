@@ -33,4 +33,4 @@ coverage/
 
 # misc
 .cache/
-*.tsbuildinfo
+*.tsbuildinfo.scannerwork/

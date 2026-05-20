@@ -21,7 +21,6 @@ export default function LotDetail() {
         if (cancelled) return;
         setLot(lotRes.lot);
 
-        // try to find an auction for this lot
         const all = await auctionApi.listAuctions();
         if (cancelled) return;
         const matching = all.items.find((a) => a.lot?._id === id);
@@ -36,24 +35,32 @@ export default function LotDetail() {
     return () => { cancelled = true; };
   }, [id]);
 
-  if (loading) return <div className="max-w-3xl mx-auto px-4 py-12 text-slate-500">loading…</div>;
+  if (loading) return <div className="max-w-3xl mx-auto px-4 py-12 text-slate-500">Loading…</div>;
   if (err)     return <div className="max-w-3xl mx-auto px-4 py-12 text-red-600">{err}</div>;
   if (!lot)    return null;
+
+  const statusLabel = {
+    listed: 'Listed',
+    in_auction: 'Live',
+    sold: 'Sold',
+    cancelled: 'Cancelled',
+    draft: 'Draft',
+  }[lot.status] || lot.status;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{lot.variety} · grade {lot.grade}</h1>
+        <h1 className="text-2xl font-bold">{lot.variety} · Grade {lot.grade}</h1>
         <p className="text-slate-500">
-          by {lot.farmer?.name || '—'} · {lot.region}
+          By {lot.farmer?.name || '—'} · {lot.region}
         </p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-        <Box label="weight"     value={`${lot.weightKg} kg`} />
-        <Box label="base price" value={`₹${lot.basePricePerKg}/kg`} />
-        <Box label="moisture"   value={lot.moisturePct != null ? `${lot.moisturePct}%` : '—'} />
-        <Box label="status"     value={lot.status} />
+        <Box label="Weight"     value={`${lot.weightKg} kg`} />
+        <Box label="Base Price" value={`₹${lot.basePricePerKg}/kg`} />
+        <Box label="Moisture"   value={lot.moisturePct != null ? `${lot.moisturePct}%` : '—'} />
+        <Box label="Status"     value={statusLabel} />
       </div>
 
       {lot.description && (
@@ -61,18 +68,18 @@ export default function LotDetail() {
       )}
 
       <div>
-        <h2 className="text-lg font-semibold mb-3">auction</h2>
+        <h2 className="text-lg font-semibold mb-3">Auction</h2>
         {auction ? (
-            <div className="space-y-4">
-                <AuctionRoom auction={auction} lot={lot} />
-                <OnChainPanel
-                    onChainAuctionId={auction.onChainAuctionId}
-                    basePricePerKg={auction.basePricePerKg}
-                    weightKg={lot.weightKg}
-                />
-            </div>
+          <div className="space-y-4">
+            <AuctionRoom auction={auction} lot={lot} />
+            <OnChainPanel
+              onChainAuctionId={auction.onChainAuctionId}
+              basePricePerKg={auction.basePricePerKg}
+              weightKg={lot.weightKg}
+            />
+          </div>
         ) : (
-            <p className="text-slate-500 text-sm">no auction scheduled for this lot.</p>
+          <p className="text-slate-500 text-sm">No auction scheduled for this lot.</p>
         )}
       </div>
     </div>
@@ -81,7 +88,7 @@ export default function LotDetail() {
 
 function Box({ label, value }) {
   return (
-    <div className="border border-slate-200 rounded p-3 bg-white">
+    <div className="card p-3">
       <div className="text-xs text-slate-500 uppercase">{label}</div>
       <div className="font-medium mt-1">{value}</div>
     </div>

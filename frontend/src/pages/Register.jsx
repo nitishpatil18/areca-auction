@@ -19,7 +19,7 @@ export default function Register() {
     e.preventDefault();
     const action = await dispatch(registerThunk(form));
     if (action.meta.requestStatus === 'fulfilled') {
-      toast.success(`account created. welcome, ${action.payload.user.name}`);
+      toast.success(`Account created. Welcome, ${action.payload.user.name}`);
       nav('/');
     } else {
       toast.error(action.error.message);
@@ -34,31 +34,31 @@ export default function Register() {
             <Sprout size={22} />
           </div>
           <div>
-            <h1 className="text-xl font-bold">create account</h1>
-            <p className="text-xs text-slate-500">start trading in minutes</p>
+            <h1 className="text-xl font-bold">Create Account</h1>
+            <p className="text-xs text-slate-500">Start trading in minutes</p>
           </div>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
-          <Field icon={User}   label="full name"      value={form.name}     onChange={set('name')}     placeholder="your name" required />
-          <Field icon={Mail}   label="email"          value={form.email}    onChange={set('email')}    placeholder="you@example.com" type="email" required />
-          <Field icon={Lock}   label="password"       value={form.password} onChange={set('password')} placeholder="min 8 characters" type="password" required />
-          <Field icon={MapPin} label="region"         value={form.region}   onChange={set('region')}   placeholder="e.g. Shivamogga" />
+          <Field icon={User}   label="Full Name"  value={form.name}     onChange={set('name')}     placeholder="Your name" required />
+          <Field icon={Mail}   label="Email"      value={form.email}    onChange={set('email')}    placeholder="you@example.com" type="email" required />
+          <Field icon={Lock}   label="Password"   value={form.password} onChange={set('password')} placeholder="Min 8 characters" type="password" required />
+          <Field icon={MapPin} label="Region"     value={form.region}   onChange={set('region')}   placeholder="e.g. Shivamogga" />
 
           <div>
-            <label className="text-xs font-medium text-slate-700 mb-1 block">i am a</label>
+            <label className="text-xs font-medium text-slate-700 mb-1 block">I am a</label>
             <div className="grid grid-cols-2 gap-2">
               <RoleOption
                 icon={ShoppingBag}
-                label="buyer"
-                description="bid on lots"
+                label="Buyer"
+                description="Bid on lots"
                 active={form.role === 'buyer'}
                 onClick={() => setForm((f) => ({ ...f, role: 'buyer' }))}
               />
               <RoleOption
                 icon={Tractor}
-                label="farmer"
-                description="list your lots"
+                label="Farmer"
+                description="List your lots"
                 active={form.role === 'farmer'}
                 onClick={() => setForm((f) => ({ ...f, role: 'farmer' }))}
               />
@@ -67,14 +67,14 @@ export default function Register() {
 
           <button disabled={status === 'loading'} className="btn-primary w-full">
             <UserPlus size={16} />
-            {status === 'loading' ? 'creating…' : 'create account'}
+            {status === 'loading' ? 'Creating…' : 'Create Account'}
           </button>
         </form>
 
         <p className="mt-6 text-sm text-slate-600 text-center">
-          already have an account?{' '}
+          Already have an account?{' '}
           <Link to="/login" className="text-emerald-600 font-medium hover:underline">
-            sign in
+            Sign in
           </Link>
         </p>
       </div>
@@ -106,7 +106,7 @@ function RoleOption({ icon: Icon, label, description, active, onClick }) {
       }`}
     >
       <Icon size={20} className={active ? 'text-emerald-600' : 'text-slate-500'} />
-      <div className="font-semibold text-sm mt-1.5 capitalize">{label}</div>
+      <div className="font-semibold text-sm mt-1.5">{label}</div>
       <div className="text-xs text-slate-500">{description}</div>
     </button>
   );

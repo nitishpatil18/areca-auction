@@ -29,7 +29,7 @@ export default function BrowseLots() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex items-baseline justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold">browse lots</h1>
+          <h1 className="text-3xl font-bold">Browse Lots</h1>
           <p className="text-slate-500 mt-1">{items.length} lot{items.length !== 1 ? 's' : ''} available</p>
         </div>
       </div>
@@ -37,13 +37,13 @@ export default function BrowseLots() {
       <div className="card p-4 mb-6">
         <div className="flex items-center gap-2 mb-3 text-sm font-medium text-slate-700">
           <Filter size={14} />
-          filters
+          Filters
           {hasFilters && (
             <button
               onClick={() => setFilters({ variety: '', grade: '', region: '' })}
               className="ml-auto text-xs text-emerald-600 hover:underline flex items-center gap-1"
             >
-              <X size={12} /> clear
+              <X size={12} /> Clear
             </button>
           )}
         </div>
@@ -53,20 +53,20 @@ export default function BrowseLots() {
             value={filters.variety}
             onChange={(e) => setFilters((f) => ({ ...f, variety: e.target.value }))}
           >
-            {VARIETIES.map((v) => <option key={v} value={v}>{v || 'all varieties'}</option>)}
+            {VARIETIES.map((v) => <option key={v} value={v}>{v || 'All Varieties'}</option>)}
           </select>
           <select
             className="input"
             value={filters.grade}
             onChange={(e) => setFilters((f) => ({ ...f, grade: e.target.value }))}
           >
-            {GRADES.map((g) => <option key={g} value={g}>{g ? `grade ${g}` : 'all grades'}</option>)}
+            {GRADES.map((g) => <option key={g} value={g}>{g ? `Grade ${g}` : 'All Grades'}</option>)}
           </select>
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               className="input pl-9"
-              placeholder="region (e.g. Shivamogga)"
+              placeholder="Region (e.g. Shivamogga)"
               value={filters.region}
               onChange={(e) => setFilters((f) => ({ ...f, region: e.target.value }))}
             />
@@ -82,13 +82,13 @@ export default function BrowseLots() {
         </div>
       ) : items.length === 0 ? (
         <div className="card p-12 text-center text-slate-500">
-          no lots match these filters.
+          No lots match these filters.
           {hasFilters && (
             <button
               onClick={() => setFilters({ variety: '', grade: '', region: '' })}
               className="block mx-auto mt-3 text-emerald-600 font-medium hover:underline"
             >
-              clear filters
+              Clear filters
             </button>
           )}
         </div>

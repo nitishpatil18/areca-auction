@@ -10,42 +10,42 @@ export default function Home() {
 
   return (
     <div className="bg-gradient-to-b from-emerald-50/50 to-white">
-      {/* hero */}
+      {/* Hero */}
       <section className="max-w-7xl mx-auto px-4 py-16 md:py-24">
         <div className="grid md:grid-cols-2 gap-10 items-center">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold mb-5">
               <Sparkles size={14} />
-              real-time blockchain auctions
+              Real-time Blockchain Auctions
             </div>
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
-              fair pricing for arecanut, <span className="text-emerald-600">live and on-chain</span>.
+              Fair Pricing for Arecanut, <span className="text-emerald-600">Live and On-Chain</span>.
             </h1>
             <p className="mt-5 text-lg text-slate-600">
-              farmers list their produce, buyers bid in real-time. every bid is recorded on
-              the ethereum blockchain for tamper-proof history. settlements happen instantly.
+              Farmers list their produce, buyers bid in real-time. Every bid is recorded on
+              the Ethereum blockchain for tamper-proof history. Settlements happen instantly.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               {user ? (
                 <Link to={user.role === 'farmer' ? '/farmer' : user.role === 'buyer' ? '/buyer' : '/admin'} className="btn-primary">
-                  go to dashboard <ArrowRight size={16} />
+                  Go to Dashboard <ArrowRight size={16} />
                 </Link>
               ) : (
                 <>
                   <Link to="/register" className="btn-primary">
-                    get started <ArrowRight size={16} />
+                    Get Started <ArrowRight size={16} />
                   </Link>
                   <Link to="/lots" className="btn-secondary">
-                    browse lots
+                    Browse Lots
                   </Link>
                 </>
               )}
             </div>
 
             <div className="mt-10 flex items-center gap-6 text-sm text-slate-600">
-              <Stat n="real-time" label="bidding" />
-              <Stat n="on-chain" label="receipts" />
-              <Stat n="atomic" label="settlements" />
+              <Stat n="Real-time" label="bidding" />
+              <Stat n="On-chain" label="receipts" />
+              <Stat n="Atomic" label="settlements" />
             </div>
           </div>
 
@@ -60,23 +60,23 @@ export default function Home() {
                 <span className="text-xs text-slate-500 font-mono">02m 13s</span>
               </div>
               <div className="mb-3">
-                <div className="text-xs text-slate-500 uppercase tracking-wide">bette · grade A · 100kg</div>
+                <div className="text-xs text-slate-500 uppercase tracking-wide">Bette · Grade A · 100kg</div>
                 <div className="text-xs text-slate-500 mt-0.5">Shivamogga, Karnataka</div>
               </div>
               <div className="border-t border-slate-200 pt-3 mb-3">
-                <div className="text-xs text-slate-500 uppercase">current bid</div>
+                <div className="text-xs text-slate-500 uppercase">Current Bid</div>
                 <div className="text-3xl font-bold text-slate-900 mt-1">₹485<span className="text-lg text-slate-500">/kg</span></div>
                 <div className="text-xs text-slate-500 mt-1">12 bids · 8 active bidders</div>
               </div>
               <div className="space-y-1.5 text-xs">
                 <Bid name="Satyan T." price={485} you={false} />
-                <Bid name="you" price={478} you={true} />
+                <Bid name="You" price={478} you={true} />
                 <Bid name="Buyer 47" price={470} you={false} />
               </div>
               <div className="mt-4 pt-4 border-t border-slate-200">
                 <div className="flex items-center gap-2 text-xs text-slate-600">
                   <Network size={14} className="text-emerald-600" />
-                  on-chain id #142 · tx 0x4f...d8a3
+                  On-chain ID #142 · tx 0x4f...d8a3
                 </div>
               </div>
             </div>
@@ -84,84 +84,84 @@ export default function Home() {
         </div>
       </section>
 
-      {/* features */}
+      {/* Features */}
       <section className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold">why areca auction?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold">Why Areca Auction?</h2>
           <p className="mt-3 text-slate-600 max-w-2xl mx-auto">
-            built ground-up for the arecanut trade. fast where it needs to be. trustless where it counts.
+            Built ground-up for the arecanut trade. Fast where it needs to be. Trustless where it counts.
           </p>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
           <Feature
             icon={Zap}
             color="bg-amber-100 text-amber-700"
-            title="real-time bidding"
-            body="websocket-powered live updates. see every bid the moment it lands."
+            title="Real-time Bidding"
+            body="WebSocket-powered live updates. See every bid the moment it lands."
           />
           <Feature
             icon={Shield}
             color="bg-emerald-100 text-emerald-700"
-            title="on-chain records"
-            body="every auction is mirrored to ethereum. tamper-proof settlement history."
+            title="On-chain Records"
+            body="Every auction is mirrored to Ethereum. Tamper-proof settlement history."
           />
           <Feature
             icon={Wallet}
             color="bg-blue-100 text-blue-700"
-            title="instant settlement"
-            body="winners' wallets debit, farmers' credit. atomic. no middleman."
+            title="Instant Settlement"
+            body="Winners' wallets debit, farmers' credit. Atomic. No middleman."
           />
           <Feature
             icon={BarChart3}
             color="bg-purple-100 text-purple-700"
-            title="market analytics"
-            body="track price trends by variety, grade, and region over time."
+            title="Market Analytics"
+            body="Track price trends by variety, grade, and region over time."
           />
         </div>
       </section>
 
-      {/* how it works */}
+      {/* How it works */}
       <section className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold">how it works</h2>
+          <h2 className="text-3xl md:text-4xl font-bold">How It Works</h2>
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           <Step
             n={1}
             icon={Tractor}
-            title="farmer lists a lot"
-            body="upload variety, grade, weight, region, and base price. schedule the auction window."
+            title="Farmer Lists a Lot"
+            body="Upload variety, grade, weight, region, and base price. Schedule the auction window."
           />
           <Step
             n={2}
             icon={ShoppingBag}
-            title="buyers bid live"
-            body="multiple buyers compete in real-time. the highest valid bid wins when the timer ends."
+            title="Buyers Bid Live"
+            body="Multiple buyers compete in real-time. The highest valid bid wins when the timer ends."
           />
           <Step
             n={3}
             icon={CheckCircle2}
-            title="auto settlement"
-            body="winning amount transfers off-chain instantly. on-chain receipt provides audit trail."
+            title="Auto Settlement"
+            body="Winning amount transfers off-chain instantly. On-chain receipt provides audit trail."
           />
         </div>
       </section>
 
-      {/* cta */}
+      {/* CTA */}
       <section className="max-w-5xl mx-auto px-4 py-16">
         <div className="card p-10 text-center bg-gradient-to-br from-emerald-600 to-emerald-700 border-0 text-white">
           <Sprout size={40} className="mx-auto mb-4 opacity-80" />
-          <h3 className="text-2xl md:text-3xl font-bold mb-3">ready to trade?</h3>
+          <h3 className="text-2xl md:text-3xl font-bold mb-3">Ready to Trade?</h3>
           <p className="text-emerald-50 max-w-xl mx-auto mb-6">
-            join farmers and buyers using fair, transparent, real-time auctions.
+            Join farmers and buyers using fair, transparent, real-time auctions.
           </p>
           {!user && (
             <div className="flex flex-wrap justify-center gap-3">
               <Link to="/register" className="btn bg-white text-emerald-700 hover:bg-emerald-50">
-                create an account <ArrowRight size={16} />
+                Create an Account <ArrowRight size={16} />
               </Link>
               <Link to="/lots" className="btn bg-emerald-800 text-white hover:bg-emerald-900">
-                browse lots
+                Browse Lots
               </Link>
             </div>
           )}

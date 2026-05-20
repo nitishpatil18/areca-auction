@@ -1,11 +1,11 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../store/authSlice.js';
-import toast from 'react-hot-toast';
 import {
   Sprout, Home, Search, BarChart3, ShoppingBag, Tractor,
-  Shield, LogOut, LogIn, UserPlus, Wallet, Gavel,
+  Shield, LogOut, LogIn, UserPlus, Gavel,
 } from 'lucide-react';
+import { logout } from '../store/authSlice.js';
+import toast from 'react-hot-toast';
 
 export default function Navbar() {
   const { user } = useSelector((s) => s.auth);
@@ -15,7 +15,7 @@ export default function Navbar() {
 
   function doLogout() {
     dispatch(logout());
-    toast.success('signed out');
+    toast.success('Signed out');
     nav('/login');
   }
 
@@ -45,18 +45,18 @@ export default function Navbar() {
         </Link>
 
         <div className="flex items-center gap-1 flex-1 justify-end overflow-x-auto">
-          <NavLink to="/"          icon={Home}>home</NavLink>
-          <NavLink to="/lots"      icon={Search}>browse</NavLink>
-          <NavLink to="/analytics" icon={BarChart3}>analytics</NavLink>
+          <NavLink to="/"          icon={Home}>Home</NavLink>
+          <NavLink to="/lots"      icon={Search}>Browse</NavLink>
+          <NavLink to="/analytics" icon={BarChart3}>Analytics</NavLink>
 
-          {user?.role === 'farmer' && <NavLink to="/farmer" icon={Tractor}>farmer</NavLink>}
+          {user?.role === 'farmer' && <NavLink to="/farmer" icon={Tractor}>Farmer</NavLink>}
           {user?.role === 'buyer' && (
             <>
-                <NavLink to="/buyer"      icon={ShoppingBag}>buyer</NavLink>
-                <NavLink to="/buyer/bids" icon={Gavel}>my bids</NavLink>
+              <NavLink to="/buyer"      icon={ShoppingBag}>Buyer</NavLink>
+              <NavLink to="/buyer/bids" icon={Gavel}>My Bids</NavLink>
             </>
           )}
-          {user?.role === 'admin'  && <NavLink to="/admin"  icon={Shield}>admin</NavLink>}
+          {user?.role === 'admin' && <NavLink to="/admin" icon={Shield}>Admin</NavLink>}
 
           <div className="w-px h-6 bg-slate-200 mx-1 hidden md:block" />
 
@@ -71,18 +71,18 @@ export default function Navbar() {
                   <div className="text-xs text-slate-500 capitalize">{user.role}</div>
                 </div>
               </div>
-              <button onClick={doLogout} className="btn-ghost text-sm" title="logout">
+              <button onClick={doLogout} className="btn-ghost text-sm" title="Logout">
                 <LogOut size={16} />
-                <span className="hidden sm:inline">logout</span>
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </>
           ) : (
             <>
               <Link to="/login" className="btn-ghost text-sm">
-                <LogIn size={16} /> login
+                <LogIn size={16} /> Login
               </Link>
               <Link to="/register" className="btn-primary text-sm">
-                <UserPlus size={16} /> register
+                <UserPlus size={16} /> Register
               </Link>
             </>
           )}

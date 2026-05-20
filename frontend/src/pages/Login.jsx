@@ -16,7 +16,7 @@ export default function Login() {
     e.preventDefault();
     const action = await dispatch(loginThunk({ email, password }));
     if (action.meta.requestStatus === 'fulfilled') {
-      toast.success(`welcome back, ${action.payload.user.name}`);
+      toast.success(`Welcome back, ${action.payload.user.name}`);
       nav('/');
     } else {
       toast.error(action.error.message);
@@ -31,14 +31,14 @@ export default function Login() {
             <Sprout size={22} />
           </div>
           <div>
-            <h1 className="text-xl font-bold">welcome back</h1>
-            <p className="text-xs text-slate-500">sign in to continue</p>
+            <h1 className="text-xl font-bold">Welcome Back</h1>
+            <p className="text-xs text-slate-500">Sign in to continue</p>
           </div>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-medium text-slate-700 mb-1 block">email</label>
+            <label className="text-xs font-medium text-slate-700 mb-1 block">Email</label>
             <div className="relative">
               <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -53,7 +53,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="text-xs font-medium text-slate-700 mb-1 block">password</label>
+            <label className="text-xs font-medium text-slate-700 mb-1 block">Password</label>
             <div className="relative">
               <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -69,14 +69,14 @@ export default function Login() {
 
           <button disabled={status === 'loading'} className="btn-primary w-full">
             <LogIn size={16} />
-            {status === 'loading' ? 'signing in…' : 'sign in'}
+            {status === 'loading' ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
 
         <p className="mt-6 text-sm text-slate-600 text-center">
-          new to areca auction?{' '}
+          New to Areca Auction?{' '}
           <Link to="/register" className="text-emerald-600 font-medium hover:underline">
-            create an account
+            Create an account
           </Link>
         </p>
       </div>
