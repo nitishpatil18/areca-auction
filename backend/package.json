@@ -4,12 +4,12 @@
   "description": "Real-time arecanut auction backend (mern + blockchain)",
   "type": "module",
   "main": "src/server.js",
- "scripts": {
-  "dev": "nodemon src/server.js",
-  "start": "node src/server.js",
-  "test": "vitest run",
-  "test:watch": "vitest",
-  "test:cov": "vitest run --coverage"
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
