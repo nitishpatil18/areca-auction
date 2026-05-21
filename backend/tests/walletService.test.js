@@ -187,3 +187,65 @@ describe('walletService.topUp', () => {
     expect(txs).toHaveLength(0);
   });
 });
+
+// ----- getTransactions ----------------------------------------------------
+
+import { getTransactions } from '../src/services/walletService.js';
+
+describe('walletService.getTransactions', () => {
+  it('returns an empty page when the user has no transactions', async () => {
+    const user = await makeUser();
+    const result = await getTransactions(user._id);
+    expect(result.items).toEqual([]);
+    expect(result.total).toBe(0);
+    expect(result.totalPages).toBe(0);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+  });
+
+  it('returns transactions newest first', async () => {
+    const user = await makeUser();
+    await Transaction.create([
+      { user: user._id, type: 'credit_topup',       amount: 100,  createdAt: new Date(Date.now() - 3000) },
+      { user: user._id, type: 'auction_settlement', amount: -500, createdAt: new Date(Date.now() - 2000) },
+      { user: user._id, type: 'farmer_payout',      amount: 800,  createdAt: new Date(Date.now() - 1000) },
+    ]);
+
+    const result = await getTransactions(user._id);
+    expect(result.items).toHaveLength(3);
+    expect(result.items[0].type).toBe('farmer_payout');
+    expect(result.items[2].type).toBe('credit_topup');
+    expect(result.total).toBe(3);
+  });
+
+  it('paginates correctly', async () => {
+    const user = await makeUser();
+    for (let i = 0; i < 25; i++) {
+      await Transaction.create({
+        user: user._id, type: 'credit_topup', amount: i,
+        createdAt: new Date(Date.now() - i * 1000),
+      });
+    }
+
+    const page1 = await getTransactions(user._id, { page: 1, limit: 10 });
+    const page2 = await getTransactions(user._id, { page: 2, limit: 10 });
+    const page3 = await getTransactions(user._id, { page: 3, limit: 10 });
+
+    expect(page1.items).toHaveLength(10);
+    expect(page2.items).toHaveLength(10);
+    expect(page3.items).toHaveLength(5);
+    expect(page1.total).toBe(25);
+    expect(page1.totalPages).toBe(3);
+  });
+
+  it('does not leak other users transactions', async () => {
+    const userA = await makeUser();
+    const userB = await makeUser();
+    await Transaction.create({ user: userA._id, type: 'credit_topup', amount: 100 });
+    await Transaction.create({ user: userB._id, type: 'credit_topup', amount: 200 });
+
+    const result = await getTransactions(userA._id);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].amount).toBe(100);
+  });
+});

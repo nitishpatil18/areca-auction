@@ -13,3 +13,11 @@ export async function topUp(req, res, next) {
     res.json(result);
   } catch (e) { next(e); }
 }
+export async function getTransactions(req, res, next) {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Math.min(Number(req.query.limit) || 20, 100);
+    const result = await walletService.getTransactions(req.user.id, { page, limit });
+    res.json(result);
+  } catch (e) { next(e); }
+}

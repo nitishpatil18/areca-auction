@@ -42,3 +42,16 @@ export async function topUp(userId, amount) {
   await Transaction.create({ user: userId, type: 'credit_topup', amount });
   return { balance: user.walletBalance };
 }
+export async function getTransactions(userId, { page = 1, limit = 20 } = {}) {
+  const skip = (page - 1) * limit;
+  const [items, total] = await Promise.all([
+    Transaction.find({ user: userId })
+      .populate('auction', 'currentBidPerKg finalAmount')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Transaction.countDocuments({ user: userId }),
+  ]);
+  return { items, page, limit, total, totalPages: Math.ceil(total / limit) };
+}
