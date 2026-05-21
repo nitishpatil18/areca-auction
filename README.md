@@ -43,22 +43,38 @@ A hybrid platform where farmers list arecanut lots, buyers bid in real-time via 
 ---
 
 ## Architecture
-+-------------+    REST + WebSocket    +-------------+   Mongoose   +---------+
-|  React UI   | <--------------------> |   Express   | <----------> | MongoDB |
-| (port 5173) |                        | (port 8000) |              +---------+
-+------+------+                        +------+------+
-|                                      |
-| MetaMask + ethers v6                 | ethers v6 (admin signer)
-v                                      v
-+----------------------------------------------------+
-|        Hardhat Local Node (port 8545)              |
-|        ArecaAuction.sol smart contract             |
-+----------------------------------------------------+
+
+```
+                  Docker network: areca-net
+
+   +----------+   +-----------+   +----------+   +-----------+
+   |  mongo   |   |  hardhat  |   |  deploy  |   |  backend  |
+   |  :27017  |   |   :8545   |   | one-shot |   |   :8000   |
+   +----+-----+   +-----+-----+   +----+-----+   +-----+-----+
+        |               ^              | writes        ^
+        |   Mongoose    |  ethers v6   v  abi+addr     |
+        |               |        +----------+          |
+        +---------------+------> |  shared  | ---------+
+                                |  volume  |
+                                +----------+
+
+                  +-----------+    REST + WebSocket   +-----------+
+                  | frontend  | <---------------------> |  backend  |
+                  |  :5173    |                       |   :8000   |
+                  +-----------+                       +-----------+
+                       ^
+                       | browser
+                       v
+                  +-----------+
+                  | your mac  |
+                  +-----------+
+```
 
 **Off-chain (fast layer)**: lots, users, bids, wallet balances, real-time bidding via WebSockets.
+
 **On-chain (trust layer)**: tamper-proof auction record, settled bids, pull-payment refunds.
 
-This hybrid approach gives users millisecond-fast bidding while preserving cryptographic auditability.
+This hybrid approach gives users millisecond-fast bidding while preserving cryptographic auditability. The `deploy` init container ensures the backend always boots with a fresh contract address by writing it into a shared volume that the backend reads at startup.
 
 ---
 
@@ -70,27 +86,67 @@ This hybrid approach gives users millisecond-fast bidding while preserving crypt
 | Backend | Node.js 22, Express, Mongoose, Socket.IO, JWT, bcrypt, Joi, Helmet, ethers v6, PDFKit |
 | Database | MongoDB |
 | Blockchain | Solidity 0.8.24, Hardhat 2, Ethereum |
-| Dev | nodemon, mongosh, MetaMask |
+| Dev | nodemon, mongosh, MetaMask, Docker, Docker Compose |
+| Testing | Vitest, mongodb-memory-server, GitHub Actions CI |
 
 ---
 
 ## Prerequisites
 
+- **Docker Desktop** (recommended). All you need to run the whole stack.
+
+For running without Docker:
+
 - Node.js v22 (LTS). Use `nvm` if you need to switch.
 - MongoDB running locally on `mongodb://127.0.0.1:27017` or a MongoDB Atlas URI.
-- MetaMask browser extension (for on-chain bidding).
-- macOS / Linux / WSL.
 
 ---
 
-## Setup
+## Quickstart
 
-### 1. Clone and install
+The whole stack runs in Docker. One command brings up MongoDB, a local Ethereum chain, the smart contract deployment, the API, and the frontend.
 
 ```bash
-git clone <repository-url> areca-auction
+git clone https://github.com/nitishpatil18/areca-auction.git
 cd areca-auction
+docker compose up
+```
 
+Open [http://localhost:5173](http://localhost:5173).
+
+Behind the scenes:
+- `mongo` boots on port 27018 (host) → 27017 (container)
+- `hardhat` boots a local chain on port 8545 with 20 pre-funded accounts
+- `deploy` runs once, deploys `ArecaAuction.sol`, writes the contract address and ABI into a shared volume, then exits
+- `backend` reads the shared contract address and starts on port 8000
+- `frontend` runs the Vite dev server on port 5173
+
+To wipe data between runs:
+
+```bash
+docker compose down -v
+```
+
+## Running tests
+
+```bash
+cd backend
+npm install
+npm test
+```
+
+74 tests across 5 services (auth, wallet, bid, auction, invoice) using an in-memory MongoDB. Run automatically on every push via GitHub Actions.
+
+## Running without Docker
+
+If you prefer to run the services directly on your machine:
+
+<details>
+<summary>Manual setup steps</summary>
+
+### 1. Install dependencies
+
+```bash
 cd backend     && npm install && cd ..
 cd frontend    && npm install && cd ..
 cd blockchain  && npm install && cd ..
@@ -105,7 +161,7 @@ Create three `.env` files:
 ```env
 PORT=8000
 MONGO_URI=mongodb://127.0.0.1:27017/areca
-JWT_SECRET=<generate one: node -e "console.log(require('crypto').randomBytes(48).toString('hex'))">
+JWT_SECRET=<generate: node -e "console.log(require('crypto').randomBytes(48).toString('hex'))">
 JWT_EXPIRES=7d
 CORS_ORIGIN=http://localhost:5173
 RPC_URL=http://127.0.0.1:8545
@@ -119,8 +175,8 @@ ANTISNIPE_EXTEND_MS=30000
 **`frontend/.env`**
 
 ```env
-VITE_API_URL=/api
-VITE_SOCKET_URL=
+VITE_API_URL=http://localhost:8000/api
+VITE_SOCKET_URL=http://localhost:8000
 VITE_CHAIN_ID=31337
 VITE_CONTRACT_ADDRESS=
 ```
@@ -132,53 +188,26 @@ ALCHEMY_OR_INFURA_RPC=
 DEPLOYER_PK=
 ```
 
-Leave blockchain env empty for local-only development.
+### 3. Boot the stack
 
-### 3. Start the local blockchain
-
-```bash
-cd blockchain
-npx hardhat node
-```
-
-Leave running. It boots a chain on port 8545 with 20 pre-funded test accounts.
-
-### 4. Deploy the contract
-
-In another terminal:
+In four terminals:
 
 ```bash
-cd blockchain
-npx hardhat run scripts/deploy.js --network localhost
+# 1. blockchain
+cd blockchain && npx hardhat node
+
+# 2. deploy the contract, paste the printed address into backend/.env and frontend/.env
+cd blockchain && npx hardhat run scripts/deploy.js --network localhost
 node scripts/exportAbi.js
+
+# 3. backend
+cd backend && npm run dev
+
+# 4. frontend
+cd frontend && npm run dev
 ```
 
-The deploy script prints a contract address. Paste it into:
-- `backend/.env` as `CONTRACT_ADDRESS=...`
-- `frontend/.env` as `VITE_CONTRACT_ADDRESS=...`
-
-### 5. Start the backend
-
-```bash
-cd backend
-npm run dev
-```
-
-Expected log:
-INFO  mongo connected
-INFO  chain connected to http://127.0.0.1:8545 (chainId 31337), contract 0x...
-INFO  server listening on http://localhost:8000
-
-### 6. Start the frontend
-
-```bash
-cd frontend
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173).
-
----
+</details>
 
 ## Demo flow
 
