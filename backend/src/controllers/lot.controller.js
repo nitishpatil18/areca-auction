@@ -1,5 +1,8 @@
+import path from 'path';
+import fs from 'fs';
 import Lot from '../models/Lot.js';
 import { notFound, forbidden, badRequest } from '../utils/httpError.js';
+import { LOTS_DIR } from '../middleware/upload.js';
 
 const SORT_MAP = {
   newest:    { createdAt: -1 },
@@ -97,5 +100,42 @@ export async function deleteLot(req, res, next) {
 
     await lot.deleteOne();
     res.json({ ok: true });
+  } catch (e) { next(e); }
+}
+export async function uploadImages(req, res, next) {
+  try {
+    const lot = await Lot.findById(req.params.id);
+    if (!lot) throw notFound('lot not found');
+    if (String(lot.farmer) !== String(req.user.id)) throw forbidden('not your lot');
+    if (!req.files || req.files.length === 0) throw badRequest('no files uploaded');
+
+    const newPaths = req.files.map((f) => `/uploads/lots/${f.filename}`);
+    const combined = [...lot.images, ...newPaths];
+    if (combined.length > 5) {
+      // delete the just-uploaded files since we are rejecting them
+      req.files.forEach((f) => fs.unlink(path.join(LOTS_DIR, f.filename), () => {}));
+      throw badRequest('max 5 images per lot');
+    }
+
+    lot.images = combined;
+    await lot.save();
+    res.json({ images: lot.images });
+  } catch (e) { next(e); }
+}
+
+export async function deleteImage(req, res, next) {
+  try {
+    const lot = await Lot.findById(req.params.id);
+    if (!lot) throw notFound('lot not found');
+    if (String(lot.farmer) !== String(req.user.id)) throw forbidden('not your lot');
+
+    const target = `/uploads/lots/${req.params.filename}`;
+    if (!lot.images.includes(target)) throw notFound('image not on this lot');
+
+    lot.images = lot.images.filter((img) => img !== target);
+    await lot.save();
+
+    fs.unlink(path.join(LOTS_DIR, req.params.filename), () => {});
+    res.json({ images: lot.images });
   } catch (e) { next(e); }
 }

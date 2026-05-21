@@ -37,6 +37,9 @@ export function createApp() {
   app.get('/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
   app.use(express.static('public'));
+  app.use('/uploads', express.static('/app/uploads', {
+    setHeaders: (res) => res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'),
+  }));
 
   app.use('/api/auth', authRoutes);
   app.use('/api/lots', lotRoutes);

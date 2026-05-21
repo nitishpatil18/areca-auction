@@ -10,6 +10,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 FROM node:22-alpine AS runtime
 WORKDIR /app
 
+# create uploads dir as root, then drop privileges
+RUN mkdir -p /app/uploads/lots && chown -R node:node /app/uploads
+
 USER node
 
 ENV NODE_ENV=production
