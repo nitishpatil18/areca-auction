@@ -95,6 +95,11 @@ services:
       VITE_CONTRACT_ADDRESS: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
     ports:
       - "5173:5173"
+    volumes:
+      # mount source for instant hmr without rebuilding
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.js:/app/vite.config.js
     networks:
       - areca-net
 

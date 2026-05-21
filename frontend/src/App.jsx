@@ -11,6 +11,7 @@ import BrowseLots from './pages/BrowseLots.jsx';
 import LotDetail from './pages/LotDetail.jsx';
 import FarmerDashboard from './pages/FarmerDashboard.jsx';
 import BuyerDashboard from './pages/BuyerDashboard.jsx';
+import Wallet from './pages/Wallet.jsx';
 import { meThunk } from './store/authSlice.js';
 import Analytics from './pages/Analytics.jsx';
 import Admin from './pages/Admin.jsx';
@@ -49,6 +50,9 @@ export default function App() {
         } />
         <Route path="/buyer/bids" element={
           <ProtectedRoute roles={['buyer']}><MyBids /></ProtectedRoute>
+        } />
+        <Route path="/wallet" element={
+          <ProtectedRoute roles={['buyer']}><Wallet /></ProtectedRoute>
         } />
 
         <Route path="/admin" element={

@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Sprout, Home, Search, BarChart3, ShoppingBag, Tractor,
-  Shield, LogOut, LogIn, UserPlus, Gavel,
+  Shield, LogOut, LogIn, UserPlus, Gavel, Wallet,
 } from 'lucide-react';
 import { logout } from '../store/authSlice.js';
 import toast from 'react-hot-toast';
@@ -54,6 +54,7 @@ export default function Navbar() {
             <>
               <NavLink to="/buyer"      icon={ShoppingBag}>Buyer</NavLink>
               <NavLink to="/buyer/bids" icon={Gavel}>My Bids</NavLink>
+              <NavLink to="/wallet"     icon={Wallet}>Wallet</NavLink>
             </>
           )}
           {user?.role === 'admin' && <NavLink to="/admin" icon={Shield}>Admin</NavLink>}
