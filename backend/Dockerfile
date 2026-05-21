@@ -19,6 +19,7 @@ COPY --chown=node:node --from=deps /app/node_modules ./node_modules
 COPY --chown=node:node package.json package-lock.json ./
 COPY --chown=node:node src ./src
 COPY --chown=node:node public ./public
+COPY --chown=node:node scripts ./scripts
 COPY --chown=node:node docker-entrypoint.sh ./docker-entrypoint.sh
 
 EXPOSE 8000

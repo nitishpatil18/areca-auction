@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   walletAddress: { type: String, lowercase: true, default: null },
   walletBalance: { type: Number, default: 0, min: 0 },
   region: { type: String, default: null },
+  isSeeded: { type: Boolean, default: false, index: true },
 }, { timestamps: true });
 
 userSchema.methods.comparePassword = function (plain) {

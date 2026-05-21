@@ -25,6 +25,7 @@ const auctionSchema = new mongoose.Schema({
   onChainAuctionId: { type: Number, default: null },
   createTxHash:     String,
   closeTxHash:      String,
+  isSeeded: { type: Boolean, default: false, index: true },
 }, { timestamps: true });
 
 auctionSchema.index({ status: 1, endAt: 1 });

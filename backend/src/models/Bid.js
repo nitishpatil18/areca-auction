@@ -6,6 +6,7 @@ const bidSchema = new mongoose.Schema({
   pricePerKg:  { type: Number, required: true },
   amountTotal: { type: Number, required: true },
   txHash: String,
+  isSeeded: { type: Boolean, default: false, index: true },
 }, { timestamps: true });
 
 bidSchema.index({ auction: 1, createdAt: -1 });

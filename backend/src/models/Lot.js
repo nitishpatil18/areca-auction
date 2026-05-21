@@ -22,6 +22,7 @@ const lotSchema = new mongoose.Schema({
     default: 'draft',
     index: true,
   },
+  isSeeded: { type: Boolean, default: false, index: true },
 }, { timestamps: true });
 
 // composite index for typical browse query (variety + grade + region)
