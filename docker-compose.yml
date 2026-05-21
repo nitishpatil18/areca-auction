@@ -75,6 +75,29 @@ services:
     networks:
       - areca-net
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: areca-frontend:dev
+    container_name: areca-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      # browser hits backend on the host's mapped port, not the container
+      VITE_API_URL: "http://localhost:8000/api"
+      VITE_SOCKET_URL: "http://localhost:8000"
+      VITE_CHAIN_ID: "31337"
+      # contract address is regenerated each boot. for now use the canonical
+      # first-deploy address; a future stage can read it from /shared/contract.env
+      VITE_CONTRACT_ADDRESS: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+    ports:
+      - "5173:5173"
+    networks:
+      - areca-net
+
 networks:
   areca-net:
     driver: bridge
