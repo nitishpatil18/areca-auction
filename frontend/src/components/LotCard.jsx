@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Scale, MapPin, Droplets, Tag } from 'lucide-react';
+import { Scale, MapPin, Droplets, Tag, ImageOff } from 'lucide-react';
+import { imageUrl } from '../lib/urls.js';
 
 export default function LotCard({ lot }) {
   const statusBadge = {
@@ -23,6 +24,15 @@ export default function LotCard({ lot }) {
       to={`/lots/${lot._id}`}
       className="card p-5 hover:shadow-md hover:border-emerald-200 transition-all group"
     >
+      <div className="aspect-[16/9] -mx-5 -mt-5 mb-4 bg-slate-100 overflow-hidden border-b border-slate-200">
+        {lot.images?.[0] ? (
+          <img src={imageUrl(lot.images[0])} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-slate-300">
+            <ImageOff size={32} />
+          </div>
+        )}
+      </div>
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">

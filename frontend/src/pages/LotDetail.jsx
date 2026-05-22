@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import * as lotApi from '../api/lot.js';
+import { imageUrl } from '../lib/urls.js';
 import * as auctionApi from '../api/auction.js';
 import AuctionRoom from '../components/AuctionRoom.jsx';
 import OnChainPanel from '../components/OnChainPanel.jsx';
@@ -56,6 +57,15 @@ export default function LotDetail() {
         </p>
       </div>
 
+      {lot.images?.length > 0 && (
+        <div className={`grid gap-2 ${lot.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3'}`}>
+          {lot.images.map((img) => (
+            <a key={img} href={imageUrl(img)} target="_blank" rel="noreferrer" className="aspect-video sm:aspect-square rounded-lg overflow-hidden border border-slate-200 hover:border-emerald-300 transition">
+              <img src={imageUrl(img)} alt="" className="w-full h-full object-cover" loading="lazy" />
+            </a>
+          ))}
+        </div>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
         <Box label="Weight"     value={`${lot.weightKg} kg`} />
         <Box label="Base Price" value={`₹${lot.basePricePerKg}/kg`} />
