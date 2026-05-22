@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
-  Plus, Trash2, Calendar, Tractor, Package, Tag, Scale, MapPin, Droplets, FileDown,
+  Plus, Trash2, Calendar, Tractor, Package, Tag, Scale, MapPin, Droplets, FileDown, Image as ImageIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as lotApi from '../api/lot.js';
+import LotImageManager from '../components/LotImageManager.jsx';
 import * as auctionApi from '../api/auction.js';
 
 export default function FarmerDashboard() {
@@ -138,6 +139,7 @@ function Wrap({ icon: Icon, label, children }) {
 
 function LotRow({ lot, onChanged }) {
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showImages, setShowImages] = useState(false);
   const [auction, setAuction] = useState(null);
 
   useEffect(() => {
@@ -205,6 +207,17 @@ function LotRow({ lot, onChanged }) {
               {showSchedule ? 'Cancel' : 'Schedule'}
             </button>
           )}
+          {(lot.status === 'listed' || lot.status === 'draft' || lot.status === 'in_auction') && (
+            <button
+              onClick={() => setShowImages((v) => !v)}
+              className={showImages ? 'btn-secondary text-sm' : 'btn-secondary text-sm'}
+              title="Manage images"
+            >
+              <ImageIcon size={14} />
+              {showImages ? 'Hide' : 'Images'}
+              {lot.images?.length > 0 && <span className="ml-1 text-xs text-slate-500">({lot.images.length})</span>}
+            </button>
+          )}
           {lot.status === 'sold' && auction && (
             <button onClick={dl} className="btn-primary text-sm">
               <FileDown size={14} /> Invoice
@@ -220,6 +233,10 @@ function LotRow({ lot, onChanged }) {
 
       {showSchedule && lot.status === 'listed' && (
         <ScheduleAuction lotId={lot._id} onScheduled={() => { setShowSchedule(false); onChanged(); }} />
+      )}
+
+      {showImages && (
+        <LotImageManager lotId={lot._id} images={lot.images || []} onChanged={onChanged} />
       )}
     </div>
   );
