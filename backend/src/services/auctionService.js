@@ -3,6 +3,7 @@ import Lot from '../models/Lot.js';
 import User from '../models/User.js';
 import Bid from '../models/Bid.js';
 import Transaction from '../models/Transaction.js';
+import * as notificationService from './notificationService.js';
 import * as chainService from './chainService.js';
 import { notFound, badRequest, forbidden } from '../utils/httpError.js';
 
@@ -137,6 +138,22 @@ export async function settleAndClose(auctionId) {
 
       lot.status = 'sold';
       await lot.save();
+
+      // notify winner and farmer
+      notificationService.create({
+        user: winner._id,
+        type: 'auction_won',
+        title: 'You won an auction',
+        body: `${lot.variety} · Grade ${lot.grade} · Total ₹${totalAmount.toLocaleString('en-IN')}`,
+        link: `/lots/${lot._id}`,
+      }).catch(() => {});
+      notificationService.create({
+        user: farmer._id,
+        type: 'lot_received_bid',
+        title: 'Your lot was sold',
+        body: `${lot.variety} · Grade ${lot.grade} · Payout ₹${totalAmount.toLocaleString('en-IN')}`,
+        link: `/lots/${lot._id}`,
+      }).catch(() => {});
     } else {
       auction.finalAmount = 0;
       await auction.save();

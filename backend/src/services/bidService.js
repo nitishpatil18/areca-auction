@@ -1,5 +1,6 @@
 import Auction from '../models/Auction.js';
 import Bid from '../models/Bid.js';
+import * as notificationService from './notificationService.js';
 import Lot from '../models/Lot.js';
 import User from '../models/User.js';
 import { getHeldAmount } from './walletService.js';
@@ -48,6 +49,9 @@ export async function placeBid({ auctionId, bidderId, pricePerKg }) {
     throw badRequest(`insufficient available balance. needed ${totalAmount}, available ${available}`);
   }
 
+  // remember who held the lead before this bid (for outbid notification)
+  const previousLeader = auction.highestBidder?.toString() || null;
+
   // anti-snipe: if bid lands in the last 30s, extend endAt by 30s
   const now = Date.now();
   const remaining = auction.endAt.getTime() - now;
@@ -82,6 +86,17 @@ export async function placeBid({ auctionId, bidderId, pricePerKg }) {
     pricePerKg,
     amountTotal: totalAmount,
   });
+
+  // fire outbid notification to the previous leader (if any and not the same person)
+  if (previousLeader && previousLeader !== bidderId.toString()) {
+    notificationService.create({
+      user: previousLeader,
+      type: 'outbid',
+      title: 'You have been outbid',
+      body: `New leading bid: ₹${pricePerKg}/kg on ${lot.variety} · Grade ${lot.grade}`,
+      link: `/lots/${lot._id}`,
+    }).catch(() => {});
+  }
 
   return { auction: updated, bid, extended: shouldExtend };
 }

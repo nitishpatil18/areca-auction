@@ -10,11 +10,13 @@ import auctionRoutes from './routes/auction.routes.js';
 import walletRoutes from './routes/wallet.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 
 import { notFoundHandler, errorHandler } from './middleware/error.js';
 
 export function createApp() {
   const app = express();
+  app.set('etag', false);
 
   app.use(helmet({
     contentSecurityPolicy: false,
@@ -47,6 +49,7 @@ export function createApp() {
   app.use('/api/wallet', walletRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/analytics', analyticsRoutes);
+  app.use('/api/notifications', notificationRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

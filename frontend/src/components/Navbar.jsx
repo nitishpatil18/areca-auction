@@ -5,6 +5,7 @@ import {
   Shield, LogOut, LogIn, UserPlus, Gavel, Wallet,
 } from 'lucide-react';
 import { logout } from '../store/authSlice.js';
+import NotificationBell from './NotificationBell.jsx';
 import toast from 'react-hot-toast';
 
 export default function Navbar() {
@@ -44,7 +45,7 @@ export default function Navbar() {
           <span className="hidden sm:inline">Areca<span className="text-emerald-600">Auction</span></span>
         </Link>
 
-        <div className="flex items-center gap-1 flex-1 justify-end overflow-x-auto">
+        <div className="flex items-center gap-1 flex-1 justify-end flex-wrap">
           <NavLink to="/"          icon={Home}>Home</NavLink>
           <NavLink to="/lots"      icon={Search}>Browse</NavLink>
           <NavLink to="/analytics" icon={BarChart3}>Analytics</NavLink>
@@ -63,6 +64,7 @@ export default function Navbar() {
 
           {user ? (
             <>
+              <NotificationBell />
               <div className="hidden md:flex items-center gap-2 px-3 text-sm">
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white flex items-center justify-center text-xs font-bold">
                   {user.name?.charAt(0).toUpperCase()}

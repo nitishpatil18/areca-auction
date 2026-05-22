@@ -1,8 +1,11 @@
 import jwt from 'jsonwebtoken';
 import * as bidService from '../services/bidService.js';
+import * as notificationService from '../services/notificationService.js';
 import { logger } from '../utils/logger.js';
 
 export function attachSocket(io) {
+  notificationService.attachIO(io);
+
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error('unauthorized: no token'));
@@ -16,6 +19,7 @@ export function attachSocket(io) {
 
   io.on('connection', (socket) => {
     logger.debug(`socket connected: ${socket.id} user=${socket.user?.id}`);
+    if (socket.user?.id) socket.join(`user:${socket.user.id}`);
 
     socket.on('auction:join', (auctionId) => {
       if (typeof auctionId === 'string') socket.join(`auction:${auctionId}`);

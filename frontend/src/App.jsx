@@ -1,4 +1,7 @@
 import { useEffect } from 'react';
+import toast from 'react-hot-toast';
+import { useSocket } from './hooks/useSocket.js';
+import { notificationReceived } from './store/notificationsSlice.js';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -31,6 +34,19 @@ export default function App() {
   useEffect(() => {
     if (token) dispatch(meThunk());
   }, [token, dispatch]);
+  // global socket listener for incoming notifications
+  const socketRef = useSocket();
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+    const onNew = (n) => {
+      dispatch(notificationReceived(n));
+      toast(n.title, { icon: '🔔', duration: 4000 });
+    };
+    socket.on('notification:new', onNew);
+    return () => { socket.off('notification:new', onNew); };
+  }, [socketRef, dispatch, token]);
+
 
   return (
     <BrowserRouter>
