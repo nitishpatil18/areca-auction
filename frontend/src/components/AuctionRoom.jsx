@@ -6,6 +6,21 @@ import { useSocket } from '../hooks/useSocket.js';
 import * as auctionApi from '../api/auction.js';
 import CountdownTimer from './CountdownTimer.jsx';
 
+// relative time: 'just now', '5m ago', '2h ago', '3d ago'
+function timeAgo(date) {
+  if (!date) return '';
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (seconds < 5)    return 'just now';
+  if (seconds < 60)   return `${seconds}s ago`;
+  const mins = Math.floor(seconds / 60);
+  if (mins < 60)      return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24)     return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+
 export default function AuctionRoom({ auction: initial, lot }) {
   const { user } = useSelector((s) => s.auth);
   const socketRef = useSocket();
@@ -190,11 +205,14 @@ export default function AuctionRoom({ auction: initial, lot }) {
               <li key={b._id} className={`flex justify-between items-center px-3 py-2 rounded-lg text-sm ${
                 i === 0 ? 'bg-emerald-50' : 'bg-slate-50'
               }`}>
-                <span className={i === 0 ? 'font-semibold text-emerald-700' : 'text-slate-700'}>
-                  {i === 0 && <Trophy size={12} className="inline mr-1" />}
+                <span className={i === 0 ? 'font-semibold text-emerald-700 flex items-center gap-1' : 'text-slate-700 flex items-center gap-1'}>
+                  {i === 0 && <Trophy size={12} />}
                   {b.bidder?.name || '—'}
                 </span>
-                <span className="font-mono text-slate-900 font-medium">₹{b.pricePerKg}/kg</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-400">{timeAgo(b.createdAt)}</span>
+                  <span className="font-mono text-slate-900 font-medium">₹{b.pricePerKg}/kg</span>
+                </div>
               </li>
             ))}
           </ul>
