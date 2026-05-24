@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 
 import authRoutes from './routes/auth.routes.js';
@@ -13,6 +12,8 @@ import analyticsRoutes from './routes/analytics.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 
 import { notFoundHandler, errorHandler } from './middleware/error.js';
+import { requestId } from './middleware/requestId.js';
+import { requestLogger } from './middleware/requestLogger.js';
 
 export function createApp() {
   const app = express();
@@ -26,8 +27,9 @@ export function createApp() {
     origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
     credentials: true,
   }));
+  app.use(requestId);
+  app.use(requestLogger);
   app.use(express.json({ limit: '1mb' }));
-  app.use(morgan('dev'));
 
   app.use(rateLimit({
     windowMs: 60 * 1000,

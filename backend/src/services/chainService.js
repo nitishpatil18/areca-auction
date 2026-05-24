@@ -20,7 +20,7 @@ export async function initChain() {
   const address = process.env.CONTRACT_ADDRESS;
 
   if (!rpc || !pk || !address) {
-    logger.warn('chain disabled: RPC_URL, ADMIN_PK, or CONTRACT_ADDRESS missing in .env');
+    logger.warn('chain disabled: missing env', { missing: ['RPC_URL','ADMIN_PK','CONTRACT_ADDRESS'].filter(k => !process.env[k]) });
     return;
   }
 
@@ -34,9 +34,9 @@ export async function initChain() {
     contract = new ethers.Contract(address, abi, wallet);
 
     const net = await provider.getNetwork();
-    logger.info(`chain connected to ${rpc} (chainId ${net.chainId}), contract ${address}`);
+    logger.info('chain connected', { rpc, chainId: Number(net.chainId), contract: address });
   } catch (e) {
-    logger.error('chain init failed: ' + e.message);
+    logger.error('chain init failed', { error: e.message });
     provider = null; wallet = null; contract = null;
   }
 }
@@ -64,7 +64,7 @@ export async function createOnChainAuction({ basePricePerKg, weightKg, endAt }) 
 
     return { onChainAuctionId: onChainId, txHash: receipt.hash };
   } catch (e) {
-    logger.error('createOnChainAuction failed: ' + e.message);
+    logger.error('createOnChainAuction failed', { error: e.message });
     return null;
   }
 }
@@ -76,7 +76,7 @@ export async function closeOnChainAuction(onChainAuctionId) {
     const receipt = await tx.wait();
     return { txHash: receipt.hash };
   } catch (e) {
-    logger.error('closeOnChainAuction failed: ' + e.message);
+    logger.error('closeOnChainAuction failed', { error: e.message });
     return null;
   }
 }
