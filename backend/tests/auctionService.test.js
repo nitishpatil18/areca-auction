@@ -503,16 +503,15 @@ describe('auctionService.settleAndClose happy path', () => {
 });
 
 describe('auctionService.settleAndClose insufficient winner funds', () => {
-  it('marks finalAmount=0, reverts lot to listed, leaves auction closed (current behavior)', async () => {
-    // documents the dangling-state bug: closed auction + listed lot, no transactions written
+  it('cancels the auction with a failure reason and relists the lot', async () => {
     const { buyer, farmer, lot, auction } = await liveAuctionFixture({
       weightKg: 100, currentBidPerKg: 80, winnerBalance: 1000, // need 8000, have 1000
     });
 
     const closed = await settleAndClose(auction._id);
 
-    expect(closed.status).toBe('closed');
-    expect(closed.finalAmount).toBe(0);
+    expect(closed.status).toBe('cancelled');
+    expect(closed.settlementFailureReason).toBe('winner_insufficient_funds');
     expect(closed.settledAt).toBeUndefined();
 
     const buyerAfter = await User.findById(buyer._id);
@@ -521,26 +520,22 @@ describe('auctionService.settleAndClose insufficient winner funds', () => {
     expect(farmerAfter.walletBalance).toBe(0);     // unchanged
 
     const lotAfter = await Lot.findById(lot._id);
-    expect(lotAfter.status).toBe('listed');        // reverted
+    expect(lotAfter.status).toBe('listed');        // relisted for retry
 
     const txs = await Transaction.find({ auction: auction._id });
-    expect(txs).toHaveLength(0);                   // nothing written
+    expect(txs).toHaveLength(0);                   // no money moved
   });
 });
 
 describe('auctionService.settleAndClose no bids', () => {
-  it('reverts the lot to listed and writes no transactions', async () => {
+  it('cancels the auction with no_bids reason and relists the lot', async () => {
     const { lot, auction } = await liveAuctionFixture({ hasWinner: false });
-
     const closed = await settleAndClose(auction._id);
-
-    expect(closed.status).toBe('closed');
-    expect(closed.finalAmount).toBeUndefined();
+    expect(closed.status).toBe('cancelled');
+    expect(closed.settlementFailureReason).toBe('no_bids');
     expect(closed.settledAt).toBeUndefined();
-
     const lotAfter = await Lot.findById(lot._id);
     expect(lotAfter.status).toBe('listed');
-
     const txs = await Transaction.find({ auction: auction._id });
     expect(txs).toHaveLength(0);
   });

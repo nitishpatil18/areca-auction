@@ -112,58 +112,84 @@ export async function settleAndClose(auctionId) {
   if (!auction) return null;
   const lot = auction.lot;
 
-  if (auction.highestBidder && auction.currentBidPerKg > 0 && lot) {
-    const winner = await User.findById(auction.highestBidder);
-    const farmer = await User.findById(auction.farmer);
-    const totalAmount = auction.currentBidPerKg * lot.weightKg;
-
-    if (winner && farmer && winner.walletBalance >= totalAmount) {
-      winner.walletBalance -= totalAmount;
-      farmer.walletBalance += totalAmount;
-      await winner.save();
-      await farmer.save();
-
-      auction.finalAmount = totalAmount;
-      auction.settledAt = new Date();
-      await auction.save();
-
-      await Transaction.create({
-        user: winner._id, type: 'auction_settlement',
-        amount: -totalAmount, auction: auction._id, meta: { lot: lot._id },
-      });
-      await Transaction.create({
-        user: farmer._id, type: 'farmer_payout',
-        amount: totalAmount, auction: auction._id, meta: { lot: lot._id },
-      });
-
-      lot.status = 'sold';
-      await lot.save();
-
-      // notify winner and farmer
-      notificationService.create({
-        user: winner._id,
-        type: 'auction_won',
-        title: 'You won an auction',
-        body: `${lot.variety} · Grade ${lot.grade} · Total ₹${totalAmount.toLocaleString('en-IN')}`,
-        link: `/lots/${lot._id}`,
-      }).catch(() => {});
-      notificationService.create({
-        user: farmer._id,
-        type: 'lot_received_bid',
-        title: 'Your lot was sold',
-        body: `${lot.variety} · Grade ${lot.grade} · Payout ₹${totalAmount.toLocaleString('en-IN')}`,
-        link: `/lots/${lot._id}`,
-      }).catch(() => {});
-    } else {
-      auction.finalAmount = 0;
-      await auction.save();
+  // case A: no bids — auction never had a winner, cancel it cleanly
+  if (!auction.highestBidder || !auction.currentBidPerKg || !lot) {
+    auction.status = 'cancelled';
+    auction.settlementFailureReason = lot ? 'no_bids' : 'missing_lot';
+    await auction.save();
+    if (lot) {
       lot.status = 'listed';
       await lot.save();
     }
-  } else if (lot) {
+    return auction;
+  }
+
+  // case B: has a winner — try to settle
+  const winner = await User.findById(auction.highestBidder);
+  const farmer = await User.findById(auction.farmer);
+  const totalAmount = auction.currentBidPerKg * lot.weightKg;
+
+  // case B1: settlement fails (winner gone, farmer gone, or insufficient funds)
+  if (!winner || !farmer || winner.walletBalance < totalAmount) {
+    auction.status = 'cancelled';
+    auction.settlementFailureReason = !winner
+      ? 'winner_not_found'
+      : !farmer
+        ? 'farmer_not_found'
+        : 'winner_insufficient_funds';
+    await auction.save();
     lot.status = 'listed';
     await lot.save();
+
+    // notify farmer the auction couldn't settle (so they can relist)
+    if (farmer) {
+      notificationService.create({
+        user: farmer._id,
+        type: 'lot_received_bid',
+        title: 'Auction settlement failed',
+        body: `${lot.variety} · Grade ${lot.grade} · Reason: ${auction.settlementFailureReason}. Lot has been relisted.`,
+        link: `/lots/${lot._id}`,
+      }).catch(() => {});
+    }
+    return auction;
   }
+
+  // case B2: settlement succeeds (happy path)
+  winner.walletBalance -= totalAmount;
+  farmer.walletBalance += totalAmount;
+  await winner.save();
+  await farmer.save();
+
+  auction.finalAmount = totalAmount;
+  auction.settledAt = new Date();
+  await auction.save();
+
+  await Transaction.create({
+    user: winner._id, type: 'auction_settlement',
+    amount: -totalAmount, auction: auction._id, meta: { lot: lot._id },
+  });
+  await Transaction.create({
+    user: farmer._id, type: 'farmer_payout',
+    amount: totalAmount, auction: auction._id, meta: { lot: lot._id },
+  });
+
+  lot.status = 'sold';
+  await lot.save();
+
+  notificationService.create({
+    user: winner._id,
+    type: 'auction_won',
+    title: 'You won an auction',
+    body: `${lot.variety} · Grade ${lot.grade} · Total ₹${totalAmount.toLocaleString('en-IN')}`,
+    link: `/lots/${lot._id}`,
+  }).catch(() => {});
+  notificationService.create({
+    user: farmer._id,
+    type: 'lot_received_bid',
+    title: 'Your lot was sold',
+    body: `${lot.variety} · Grade ${lot.grade} · Payout ₹${totalAmount.toLocaleString('en-IN')}`,
+    link: `/lots/${lot._id}`,
+  }).catch(() => {});
 
   return auction;
 }

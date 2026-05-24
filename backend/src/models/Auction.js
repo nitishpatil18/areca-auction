@@ -21,6 +21,7 @@ const auctionSchema = new mongoose.Schema({
 
   settledAt:    Date,
   finalAmount:  Number,
+  settlementFailureReason: { type: String, default: null },
 
   onChainAuctionId: { type: Number, default: null },
   createTxHash:     String,
