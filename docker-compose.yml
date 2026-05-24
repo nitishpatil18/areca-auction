@@ -25,6 +25,12 @@ services:
     restart: unless-stopped
     ports:
       - "8545:8545"
+    volumes:
+      # mount sources for live editing without rebuilding
+      - ./blockchain/contracts:/app/contracts
+      - ./blockchain/test:/app/test
+      - ./blockchain/scripts:/app/scripts
+      - ./blockchain/hardhat.config.js:/app/hardhat.config.js
     networks:
       - areca-net
     healthcheck:

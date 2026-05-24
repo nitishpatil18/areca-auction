@@ -125,4 +125,135 @@ describe('ArecaAuction', () => {
       contract.connect(bidder2).placeBid(id, { value: basePrice + 1n })
     ).to.be.revertedWith('closed');
   });
+  // ---- anti-snipe -------------------------------------------------------
+
+  it('does NOT extend endTime when bid is placed well before the window', async () => {
+    const { id, basePrice, endTime } = await createAuction(300);
+    await contract.connect(bidder1).placeBid(id, { value: basePrice });
+    const a = await contract.getAuction(id);
+    expect(a.endTime).to.equal(BigInt(endTime));
+  });
+
+  it('extends endTime when a bid lands in the anti-snipe window', async () => {
+    const { id, basePrice } = await createAuction(60);
+    await ethers.provider.send('evm_increaseTime', [45]);
+    await ethers.provider.send('evm_mine', []);
+
+    await contract.connect(bidder1).placeBid(id, { value: basePrice });
+
+    const a = await contract.getAuction(id);
+    const block = await ethers.provider.getBlock('latest');
+    expect(a.endTime).to.be.closeTo(BigInt(block.timestamp + 30), 2n);
+  });
+
+  it('emits AuctionExtended when anti-snipe fires', async () => {
+    const { id, basePrice } = await createAuction(60);
+    await ethers.provider.send('evm_increaseTime', [45]);
+    await ethers.provider.send('evm_mine', []);
+
+    await expect(
+      contract.connect(bidder1).placeBid(id, { value: basePrice })
+    ).to.emit(contract, 'AuctionExtended');
+  });
+
+  it('does NOT emit AuctionExtended on a normal bid', async () => {
+    const { id, basePrice } = await createAuction(300);
+    await expect(
+      contract.connect(bidder1).placeBid(id, { value: basePrice })
+    ).to.not.emit(contract, 'AuctionExtended');
+  });
+
+  it('keeps extending on consecutive last-second bids', async () => {
+    const { id, basePrice } = await createAuction(60);
+    await ethers.provider.send('evm_increaseTime', [45]);
+    await ethers.provider.send('evm_mine', []);
+
+    await contract.connect(bidder1).placeBid(id, { value: basePrice });
+    const after1 = (await contract.getAuction(id)).endTime;
+
+    await ethers.provider.send('evm_increaseTime', [20]);
+    await ethers.provider.send('evm_mine', []);
+
+    await contract.connect(bidder2).placeBid(id, { value: basePrice + ethers.parseEther('0.1') });
+    const after2 = (await contract.getAuction(id)).endTime;
+
+    expect(after2).to.be.greaterThan(after1);
+  });
+
+  // ---- cancel ------------------------------------------------------------
+
+  it('lets the seller cancel an auction with no bids', async () => {
+    const { id } = await createAuction();
+    await expect(
+      contract.connect(seller).cancelAuction(id)
+    ).to.emit(contract, 'AuctionCancelled').withArgs(id, seller.address);
+
+    const a = await contract.getAuction(id);
+    expect(a.cancelled).to.equal(true);
+  });
+
+  it('rejects cancel from non-seller', async () => {
+    const { id } = await createAuction();
+    await expect(
+      contract.connect(bidder1).cancelAuction(id)
+    ).to.be.revertedWith('only seller');
+  });
+
+  it('rejects cancel if any bid was placed', async () => {
+    const { id, basePrice } = await createAuction();
+    await contract.connect(bidder1).placeBid(id, { value: basePrice });
+    await expect(
+      contract.connect(seller).cancelAuction(id)
+    ).to.be.revertedWith('has bids');
+  });
+
+  it('rejects double-cancel', async () => {
+    const { id } = await createAuction();
+    await contract.connect(seller).cancelAuction(id);
+    await expect(
+      contract.connect(seller).cancelAuction(id)
+    ).to.be.revertedWith('already cancelled');
+  });
+
+  it('rejects bids on a cancelled auction', async () => {
+    const { id, basePrice } = await createAuction();
+    await contract.connect(seller).cancelAuction(id);
+    await expect(
+      contract.connect(bidder1).placeBid(id, { value: basePrice })
+    ).to.be.revertedWith('cancelled');
+  });
+
+  it('rejects close on a cancelled auction', async () => {
+    const { id } = await createAuction(60);
+    await contract.connect(seller).cancelAuction(id);
+
+    await ethers.provider.send('evm_increaseTime', [61]);
+    await ethers.provider.send('evm_mine', []);
+
+    await expect(
+      contract.connect(seller).closeAuction(id)
+    ).to.be.revertedWith('cancelled');
+  });
+
+  // ---- events + shape ----------------------------------------------------
+
+  it('emits AuctionCreated with correct args', async () => {
+    const block = await ethers.provider.getBlock('latest');
+    const endTime = block.timestamp + 120;
+    const basePrice = ethers.parseEther('2');
+
+    await expect(
+      contract.connect(seller).createAuction(basePrice, endTime)
+    ).to.emit(contract, 'AuctionCreated').withArgs(1n, seller.address, basePrice, endTime);
+  });
+
+  it('getAuction returns the cancelled field', async () => {
+    const { id } = await createAuction();
+    const a = await contract.getAuction(id);
+    expect(a.cancelled).to.equal(false);
+
+    await contract.connect(seller).cancelAuction(id);
+    const a2 = await contract.getAuction(id);
+    expect(a2.cancelled).to.equal(true);
+  });
 });
