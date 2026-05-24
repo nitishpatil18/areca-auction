@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import * as lotApi from '../api/lot.js';
 import { imageUrl } from '../lib/urls.js';
 import * as auctionApi from '../api/auction.js';
@@ -50,12 +50,16 @@ export default function LotDetail() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      <Breadcrumb lot={lot} />
+
       <div>
         <h1 className="text-2xl font-bold">{lot.variety} · Grade {lot.grade}</h1>
-        <p className="text-slate-500">
-          By {lot.farmer?.name || '—'} · {lot.region}
+        <p className="text-slate-500 text-sm mt-1">
+          Listed {new Date(lot.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
         </p>
       </div>
+
+      <FarmerChip farmer={lot.farmer} region={lot.region} />
 
       {lot.images?.length > 0 && (
         <div className={`grid gap-2 ${lot.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3'}`}>
@@ -92,6 +96,8 @@ export default function LotDetail() {
           <p className="text-slate-500 text-sm">No auction scheduled for this lot.</p>
         )}
       </div>
+
+      <p className="text-xs text-slate-400 font-mono">Lot ID: {lot._id}</p>
     </div>
   );
 }
@@ -101,6 +107,31 @@ function Box({ label, value }) {
     <div className="card p-3">
       <div className="text-xs text-slate-500 uppercase">{label}</div>
       <div className="font-medium mt-1">{value}</div>
+    </div>
+  );
+}
+function Breadcrumb({ lot }) {
+  return (
+    <nav className="text-sm text-slate-500 flex items-center gap-2">
+      <Link to="/lots" className="hover:text-emerald-600">Browse Lots</Link>
+      <span className="text-slate-300">/</span>
+      <span className="text-slate-700">{lot.variety} · Grade {lot.grade}</span>
+    </nav>
+  );
+}
+
+function FarmerChip({ farmer, region }) {
+  if (!farmer) return null;
+  const initial = (farmer.name || '?').slice(0, 1).toUpperCase();
+  return (
+    <div className="card p-3 flex items-center gap-3">
+      <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-semibold">
+        {initial}
+      </div>
+      <div className="flex-1">
+        <div className="font-medium text-sm">{farmer.name}</div>
+        <div className="text-xs text-slate-500">Farmer · {region || 'India'}</div>
+      </div>
     </div>
   );
 }
