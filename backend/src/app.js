@@ -35,7 +35,7 @@ export function createApp() {
 
   app.use(rateLimit({
     windowMs: 60 * 1000,
-    max: 300,
+    max: process.env.NODE_ENV === 'test' ? 100_000 : 300,
     standardHeaders: true,
     legacyHeaders: false,
   }));

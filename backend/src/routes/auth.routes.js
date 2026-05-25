@@ -11,7 +11,7 @@ const router = Router();
 // tighter limit on auth to slow brute-force
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 20,
+  max: process.env.NODE_ENV === 'test' ? 10_000 : 20,
   standardHeaders: true,
   legacyHeaders: false,
 });

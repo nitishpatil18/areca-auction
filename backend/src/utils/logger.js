@@ -7,6 +7,8 @@
 // each call emits exactly one json line to stdout/stderr. easy to grep,
 // pipe into jq, ship to log aggregators, or read raw.
 function emit(level, msg, context) {
+  // silent in tests to keep test output clean
+  if (process.env.NODE_ENV === 'test') return;
   const line = {
     level,
     ts: new Date().toISOString(),
