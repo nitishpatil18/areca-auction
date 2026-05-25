@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  Plus, Trash2, Calendar, Tractor, Package, Tag, Scale, MapPin, Droplets, FileDown, Image as ImageIcon,
+  Plus, Trash2, Calendar, Tractor, Package, Tag, Scale, MapPin, Droplets,
+  FileDown, Image as ImageIcon, TrendingUp, IndianRupee, Activity, ShoppingBag,
+  ChevronDown, ChevronUp,
 } from 'lucide-react';
+import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import toast from 'react-hot-toast';
 import * as lotApi from '../api/lot.js';
 import LotImageManager from '../components/LotImageManager.jsx';
@@ -9,18 +12,67 @@ import * as auctionApi from '../api/auction.js';
 
 export default function FarmerDashboard() {
   const [lots, setLots] = useState([]);
+  const [auctions, setAuctions] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
     setLoading(true);
-    lotApi.myLots()
-      .then((d) => setLots(d.items))
+    Promise.all([lotApi.myLots(), auctionApi.listAuctions()])
+      .then(([lotsData, auctionsData]) => {
+        setLots(lotsData.items);
+        setAuctions(auctionsData.items);
+      })
       .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
   }, [refreshKey]);
 
   const refresh = () => setRefreshKey((k) => k + 1);
+
+  // derived stats
+  const { totalEarned, soldCount, listedCount, liveCount, avgPrice, recentEarnings } = useMemo(() => {
+    const lotIds = new Set(lots.map((l) => l._id));
+    const myAuctions = auctions.filter((a) => a.lot && lotIds.has(a.lot._id));
+
+    const sold = myAuctions.filter((a) => a.status === 'closed' && a.finalAmount > 0);
+    const totalEarned = sold.reduce((sum, a) => sum + (a.finalAmount || 0), 0);
+    const avgPrice = sold.length > 0
+      ? Math.round(sold.reduce((s, a) => s + (a.currentBidPerKg || 0), 0) / sold.length)
+      : 0;
+
+    // earnings over the last 30 days, bucketed by day
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const buckets = {};
+    for (const a of sold) {
+      if (!a.settledAt) continue;
+      const t = new Date(a.settledAt).getTime();
+      if (t < thirtyDaysAgo) continue;
+      const day = new Date(a.settledAt).toISOString().slice(0, 10);  // YYYY-MM-DD
+      buckets[day] = (buckets[day] || 0) + (a.finalAmount || 0);
+    }
+    const recentEarnings = Object.entries(buckets)
+      .map(([date, value]) => ({ date, value }))
+      .sort((x, y) => x.date.localeCompare(y.date));
+
+    return {
+      totalEarned,
+      soldCount: sold.length,
+      listedCount: lots.filter((l) => l.status === 'listed').length,
+      liveCount: lots.filter((l) => l.status === 'in_auction').length,
+      avgPrice,
+      recentEarnings,
+    };
+  }, [lots, auctions]);
+
+  // group lots
+  const lotsByStatus = useMemo(() => {
+    const live = lots.filter((l) => l.status === 'in_auction');
+    const listed = lots.filter((l) => l.status === 'listed');
+    const sold = lots.filter((l) => l.status === 'sold');
+    const other = lots.filter((l) => !['in_auction', 'listed', 'sold'].includes(l.status));
+    return { live, listed, sold, other };
+  }, [lots]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
@@ -30,32 +82,119 @@ export default function FarmerDashboard() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">Farmer Dashboard</h1>
-          <p className="text-sm text-slate-500">List lots, schedule auctions, track sales</p>
+          <p className="text-sm text-slate-500">Your lots, auctions, and earnings</p>
         </div>
+        <button
+          onClick={() => setShowCreate((v) => !v)}
+          className="ml-auto btn-primary text-sm"
+        >
+          {showCreate ? <ChevronUp size={14} /> : <Plus size={14} />}
+          {showCreate ? 'Hide' : 'New Lot'}
+        </button>
       </div>
 
-      <CreateLotForm onCreated={refresh} />
+      {/* stats row */}
+      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <BigStat icon={IndianRupee} label="Total Earned" value={`₹${totalEarned.toLocaleString('en-IN')}`} tone="green" />
+        <BigStat icon={ShoppingBag} label="Lots Sold"    value={soldCount} tone="emerald" />
+        <BigStat icon={Activity}    label="Live Now"     value={liveCount} tone={liveCount > 0 ? 'emerald' : 'slate'} />
+        <BigStat icon={Package}     label="Listed"       value={listedCount} tone="blue" />
+        <BigStat icon={TrendingUp}  label="Avg ₹/kg"     value={avgPrice > 0 ? `₹${avgPrice}` : '—'} tone="amber" />
+      </section>
 
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Package size={18} /> My Lots
-          </h2>
-          <span className="text-sm text-slate-500">{lots.length} total</span>
+      {/* earnings chart */}
+      {recentEarnings.length > 0 && (
+        <section className="card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp size={16} className="text-emerald-600" />
+            <h2 className="text-sm font-semibold">Earnings (last 30 days)</h2>
+          </div>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={recentEarnings} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
+              <Tooltip
+                formatter={(v) => [`₹${v.toLocaleString('en-IN')}`, 'Earnings']}
+                labelStyle={{ fontSize: 12 }}
+                contentStyle={{ fontSize: 12, borderRadius: 8 }}
+              />
+              <Line type="monotone" dataKey="value" stroke="#059669" strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </section>
+      )}
+
+      {/* collapsible create form */}
+      {showCreate && (
+        <CreateLotForm
+          onCreated={() => { setShowCreate(false); refresh(); }}
+        />
+      )}
+
+      {/* lots grouped by status */}
+      {loading ? (
+        <div className="card p-8 text-center text-slate-400">Loading…</div>
+      ) : lots.length === 0 ? (
+        <div className="card p-8 text-center text-slate-500">
+          No lots yet.{' '}
+          <button onClick={() => setShowCreate(true)} className="text-emerald-600 font-medium hover:underline">
+            Create your first one.
+          </button>
         </div>
-        {loading ? (
-          <div className="card p-8 text-center text-slate-400">Loading…</div>
-        ) : lots.length === 0 ? (
-          <div className="card p-8 text-center text-slate-500">
-            No lots yet. Create your first one above.
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {lots.map((l) => <LotRow key={l._id} lot={l} onChanged={refresh} />)}
-          </div>
-        )}
-      </div>
+      ) : (
+        <>
+          {lotsByStatus.live.length > 0 && (
+            <LotSection title="Live Auctions" lots={lotsByStatus.live} onChanged={refresh} dotColor="bg-emerald-500" />
+          )}
+          {lotsByStatus.listed.length > 0 && (
+            <LotSection title="Listed (Ready to Auction)" lots={lotsByStatus.listed} onChanged={refresh} dotColor="bg-blue-500" />
+          )}
+          {lotsByStatus.sold.length > 0 && (
+            <LotSection title="Sold" lots={lotsByStatus.sold} onChanged={refresh} dotColor="bg-slate-400" />
+          )}
+          {lotsByStatus.other.length > 0 && (
+            <LotSection title="Other" lots={lotsByStatus.other} onChanged={refresh} dotColor="bg-slate-300" />
+          )}
+        </>
+      )}
     </div>
+  );
+}
+
+function BigStat({ icon: Icon, label, value, tone }) {
+  const tones = {
+    emerald: 'bg-emerald-50 text-emerald-700',
+    green:   'bg-green-50 text-green-700',
+    blue:    'bg-blue-50 text-blue-700',
+    amber:   'bg-amber-50 text-amber-700',
+    slate:   'bg-slate-50 text-slate-500',
+  };
+  return (
+    <div className="card p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-slate-500 uppercase font-medium">{label}</span>
+        <div className={`w-7 h-7 rounded-md flex items-center justify-center ${tones[tone]}`}>
+          <Icon size={14} />
+        </div>
+      </div>
+      <div className="text-xl font-bold text-slate-900">{value}</div>
+    </div>
+  );
+}
+
+function LotSection({ title, lots, onChanged, dotColor }) {
+  return (
+    <section>
+      <div className="flex items-center gap-2 mb-3">
+        <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+        <h2 className="text-base font-semibold">{title}</h2>
+        <span className="text-xs text-slate-500">({lots.length})</span>
+      </div>
+      <div className="space-y-2">
+        {lots.map((l) => <LotRow key={l._id} lot={l} onChanged={onChanged} />)}
+      </div>
+    </section>
   );
 }
 
@@ -79,7 +218,6 @@ function CreateLotForm({ onCreated }) {
         moisturePct: form.moisturePct === '' ? undefined : Number(form.moisturePct),
       });
       toast.success('Lot created');
-      setForm({ variety: 'Bette', grade: 'A', weightKg: '', basePricePerKg: '', region: '', moisturePct: '', description: '' });
       onCreated();
     } catch (e) {
       toast.error(e.message);
