@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Gavel, Clock, Users, Trophy, AlertCircle, Zap } from 'lucide-react';
+import { Gavel, Clock, Users, Trophy, AlertCircle, Zap, TrendingUp } from 'lucide-react';
+import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import toast from 'react-hot-toast';
 import { useSocket } from '../hooks/useSocket.js';
 import * as auctionApi from '../api/auction.js';
@@ -147,6 +148,8 @@ export default function AuctionRoom({ auction: initial, lot }) {
         </span>
       </div>
 
+      <BidChart bids={bids} basePricePerKg={auction.basePricePerKg} />
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         <Metric icon={Trophy} label="Current Bid" value={`₹${auction.currentBidPerKg || auction.basePricePerKg}`} suffix="/kg" big />
         <Metric icon={Clock}  label={auction.status === 'scheduled' ? 'Starts In' : 'Ends In'}
@@ -168,6 +171,8 @@ export default function AuctionRoom({ auction: initial, lot }) {
       )}
 
       {canBid ? (
+        <>
+          <QuickBidChips currentBid={auction.currentBidPerKg || auction.basePricePerKg} onPick={setBidInput} />
         <form onSubmit={placeBid} className="flex gap-2 mb-4">
           <input
             type="number" step="0.01" min={minNext}
@@ -182,6 +187,7 @@ export default function AuctionRoom({ auction: initial, lot }) {
             {busy ? 'Placing…' : 'Bid'}
           </button>
         </form>
+        </>
       ) : (
         <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 mb-4 text-sm text-slate-600 flex items-center gap-2">
           <AlertCircle size={16} />
@@ -218,6 +224,78 @@ export default function AuctionRoom({ auction: initial, lot }) {
           </ul>
         )}
       </div>
+    </div>
+  );
+}
+
+
+
+function BidChart({ bids, basePricePerKg }) {
+  if (!bids || bids.length === 0) return null;
+  // bids come newest-first; chart wants oldest-first for left-to-right time flow.
+  // prepend base price as the implicit "starting line" so the chart shows the climb.
+  const data = [
+    { t: 0, price: basePricePerKg, label: 'Base' },
+    ...bids.slice().reverse().map((b, i) => ({
+      t: i + 1,
+      price: b.pricePerKg,
+      label: b.bidder?.name || 'Anonymous',
+    })),
+  ];
+  return (
+    <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-lg p-3 mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+          <TrendingUp size={14} />
+          Price Trajectory
+        </div>
+        <span className="text-xs text-slate-500">{bids.length} bid{bids.length !== 1 ? 's' : ''}</span>
+      </div>
+      <ResponsiveContainer width="100%" height={80}>
+        <LineChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+          <XAxis dataKey="t" hide />
+          <YAxis hide domain={['dataMin - 10', 'dataMax + 10']} />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return null;
+              const p = payload[0].payload;
+              return (
+                <div className="bg-white border border-slate-200 rounded px-2 py-1 text-xs shadow">
+                  <div className="font-medium">{p.label}</div>
+                  <div className="text-emerald-700 font-mono">₹{p.price}/kg</div>
+                </div>
+              );
+            }}
+          />
+          <Line
+            type="monotone"
+            dataKey="price"
+            stroke="#059669"
+            strokeWidth={2}
+            dot={{ r: 3, fill: '#059669' }}
+            activeDot={{ r: 5 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function QuickBidChips({ currentBid, onPick }) {
+  const deltas = [1, 5, 10, 50];
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <span className="text-xs text-slate-500 mr-1">Quick bid:</span>
+      {deltas.map((d) => (
+        <button
+          key={d}
+          type="button"
+          onClick={() => onPick(String(currentBid + d))}
+          className="text-xs px-2.5 py-1 rounded-full bg-slate-100 hover:bg-emerald-100 hover:text-emerald-700 transition font-medium"
+        >
+          +{d}
+        </button>
+      ))}
     </div>
   );
 }
