@@ -52,6 +52,9 @@ export default function ForgotPassword() {
                 </p>
               </div>
             </div>
+            <Link to="/reset-password" className="btn-primary w-full justify-center">
+              I have a token → Reset Password
+            </Link>
             <Link to="/login" className="btn-secondary w-full justify-center">
               <ArrowLeft size={16} />
               Back to Sign In
@@ -79,10 +82,15 @@ export default function ForgotPassword() {
               {loading ? 'Sending…' : 'Send Reset Link'}
             </button>
 
-            <Link to="/login" className="text-sm text-slate-500 hover:text-emerald-600 flex items-center justify-center gap-1">
-              <ArrowLeft size={14} />
-              Back to Sign In
-            </Link>
+            <div className="flex items-center justify-between text-sm">
+              <Link to="/login" className="text-slate-500 hover:text-emerald-600 flex items-center gap-1">
+                <ArrowLeft size={14} />
+                Back to Sign In
+              </Link>
+              <Link to="/reset-password" className="text-emerald-600 hover:underline">
+                Already have a token?
+              </Link>
+            </div>
           </form>
         )}
       </div>
