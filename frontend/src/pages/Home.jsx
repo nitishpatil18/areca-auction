@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
   Zap, Shield, BarChart3, Wallet, ArrowRight, Sprout,
-  Tractor, ShoppingBag, Sparkles, CheckCircle2, Network,
+  Tractor, ShoppingBag, Sparkles, CheckCircle2, Network, Users, Package, IndianRupee,
 } from 'lucide-react';
+import * as publicApi from '../api/public.js';
 
 export default function Home() {
   const { user } = useSelector((s) => s.auth);
@@ -42,45 +44,10 @@ export default function Home() {
               )}
             </div>
 
-            <div className="mt-10 flex items-center gap-6 text-sm text-slate-600">
-              <Stat n="Real-time" label="bidding" />
-              <Stat n="On-chain" label="receipts" />
-              <Stat n="Atomic" label="settlements" />
-            </div>
+            <LiveStatsStrip />
           </div>
 
-          <div className="relative">
-            <div className="absolute -inset-4 bg-gradient-to-tr from-emerald-200 to-emerald-100 rounded-3xl blur-2xl opacity-60" />
-            <div className="relative card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full pulse-dot" />
-                  <span className="text-sm font-semibold text-emerald-700">LIVE</span>
-                </div>
-                <span className="text-xs text-slate-500 font-mono">02m 13s</span>
-              </div>
-              <div className="mb-3">
-                <div className="text-xs text-slate-500 uppercase tracking-wide">Bette · Grade A · 100kg</div>
-                <div className="text-xs text-slate-500 mt-0.5">Shivamogga, Karnataka</div>
-              </div>
-              <div className="border-t border-slate-200 pt-3 mb-3">
-                <div className="text-xs text-slate-500 uppercase">Current Bid</div>
-                <div className="text-3xl font-bold text-slate-900 mt-1">₹485<span className="text-lg text-slate-500">/kg</span></div>
-                <div className="text-xs text-slate-500 mt-1">12 bids · 8 active bidders</div>
-              </div>
-              <div className="space-y-1.5 text-xs">
-                <Bid name="Satyan T." price={485} you={false} />
-                <Bid name="You" price={478} you={true} />
-                <Bid name="Buyer 47" price={470} you={false} />
-              </div>
-              <div className="mt-4 pt-4 border-t border-slate-200">
-                <div className="flex items-center gap-2 text-xs text-slate-600">
-                  <Network size={14} className="text-emerald-600" />
-                  On-chain ID #142 · tx 0x4f...d8a3
-                </div>
-              </div>
-            </div>
-          </div>
+          <FeaturedAuctionCard />
         </div>
       </section>
 
@@ -171,24 +138,6 @@ export default function Home() {
   );
 }
 
-function Stat({ n, label }) {
-  return (
-    <div>
-      <div className="font-bold text-slate-900">{n}</div>
-      <div className="text-xs text-slate-500">{label}</div>
-    </div>
-  );
-}
-
-function Bid({ name, price, you }) {
-  return (
-    <div className={`flex justify-between p-2 rounded ${you ? 'bg-emerald-50' : 'bg-slate-50'}`}>
-      <span className={you ? 'font-medium text-emerald-700' : 'text-slate-600'}>{name}</span>
-      <span className="font-mono text-slate-900">₹{price}/kg</span>
-    </div>
-  );
-}
-
 function Feature({ icon: Icon, color, title, body }) {
   return (
     <div className="card p-6 hover:shadow-md transition-shadow">
@@ -213,3 +162,147 @@ function Step({ n, icon: Icon, title, body }) {
     </div>
   );
 }
+function FeaturedAuctionCard() {
+  const [auction, setAuction] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    function fetchIt() {
+      publicApi.featuredAuction()
+        .then((d) => { if (alive) { setAuction(d.auction); setLoading(false); } })
+        .catch(() => { if (alive) setLoading(false); });
+    }
+    fetchIt();
+    const id = setInterval(fetchIt, 5000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="relative">
+        <div className="absolute -inset-4 bg-gradient-to-tr from-emerald-200 to-emerald-100 rounded-3xl blur-2xl opacity-60" />
+        <div className="relative card p-6 animate-pulse">
+          <div className="h-4 bg-slate-200 rounded w-24 mb-4" />
+          <div className="h-3 bg-slate-100 rounded w-3/4 mb-3" />
+          <div className="h-10 bg-slate-200 rounded w-1/2 mt-4" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!auction) {
+    return (
+      <div className="relative">
+        <div className="absolute -inset-4 bg-gradient-to-tr from-emerald-200 to-emerald-100 rounded-3xl blur-2xl opacity-60" />
+        <div className="relative card p-6 text-center">
+          <Sprout size={32} className="mx-auto text-emerald-600 mb-3" />
+          <h3 className="font-semibold mb-1">No active auctions yet</h3>
+          <p className="text-sm text-slate-500 mb-4">Be the first to list a lot or bid.</p>
+          <Link to="/lots" className="btn-secondary inline-flex">Browse Lots</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const isLive = auction.status === 'live';
+  const isClosed = auction.status === 'closed';
+  const isScheduled = auction.status === 'scheduled';
+
+  const statusLabel = isLive ? 'LIVE NOW' : isScheduled ? 'STARTING SOON' : 'RECENTLY CLOSED';
+  const statusColor = isLive ? 'text-emerald-700 bg-emerald-50' : isClosed ? 'text-slate-600 bg-slate-100' : 'text-blue-700 bg-blue-50';
+  const priceLabel = isClosed ? 'Final Price' : isScheduled ? 'Base Price' : 'Current Bid';
+  const price = isClosed
+    ? auction.currentBidPerKg || auction.basePricePerKg
+    : isScheduled
+      ? auction.basePricePerKg
+      : auction.currentBidPerKg || auction.basePricePerKg;
+
+  return (
+    <div className="relative">
+      <div className="absolute -inset-4 bg-gradient-to-tr from-emerald-200 to-emerald-100 rounded-3xl blur-2xl opacity-60" />
+      <div className="relative card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`flex items-center gap-2 px-2 py-1 rounded text-xs font-semibold ${statusColor}`}>
+            {isLive && <span className="w-2 h-2 bg-emerald-500 rounded-full pulse-dot" />}
+            {statusLabel}
+          </div>
+          <span className="text-xs text-slate-500 font-mono">#{auction._id.slice(-6)}</span>
+        </div>
+
+        <div className="mb-3">
+          <div className="text-xs text-slate-500 uppercase tracking-wide">
+            {auction.lot?.variety} · Grade {auction.lot?.grade} · {auction.lot?.weightKg}kg
+          </div>
+          <div className="text-xs text-slate-500 mt-0.5">
+            {auction.farmer?.name} · {auction.farmer?.region || auction.lot?.region}
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200 pt-3 mb-3">
+          <div className="text-xs text-slate-500 uppercase">{priceLabel}</div>
+          <div className="text-3xl font-bold text-slate-900 mt-1">
+            ₹{price?.toLocaleString('en-IN')}<span className="text-lg text-slate-500">/kg</span>
+          </div>
+          <div className="text-xs text-slate-500 mt-1">
+            {auction.bidCount || 0} bid{auction.bidCount !== 1 ? 's' : ''}
+            {auction.highestBidder && ` · Leader: ${auction.highestBidder.name}`}
+          </div>
+        </div>
+
+        {auction.onChainAuctionId && (
+          <div className="mt-4 pt-4 border-t border-slate-200 flex items-center gap-2 text-xs text-slate-600">
+            <Network size={14} className="text-emerald-600" />
+            On-chain ID #{auction.onChainAuctionId}
+          </div>
+        )}
+
+        <Link
+          to={`/lots/${auction.lot?._id}`}
+          className="mt-4 btn-primary w-full justify-center text-sm"
+        >
+          View Auction <ArrowRight size={14} />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function LiveStatsStrip() {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    publicApi.publicStats().then(setStats).catch(() => {});
+  }, []);
+
+  if (!stats) {
+    return <div className="mt-10 h-12 bg-slate-100 rounded animate-pulse w-full max-w-md" />;
+  }
+
+  return (
+    <div className="mt-10 grid grid-cols-3 gap-4 max-w-md">
+      <BigStat
+        icon={IndianRupee}
+        value={stats.totalSettledValue >= 100000
+          ? `${(stats.totalSettledValue / 100000).toFixed(1)}L`
+          : `${(stats.totalSettledValue / 1000).toFixed(0)}k`}
+        label="Volume Traded"
+      />
+      <BigStat icon={Package} value={stats.soldLots} label="Lots Sold" />
+      <BigStat icon={Users}   value={stats.totalUsers} label="Active Users" />
+    </div>
+  );
+}
+
+function BigStat({ icon: Icon, value, label }) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5">
+        <Icon size={14} className="text-emerald-600" />
+        <span className="font-bold text-slate-900 text-lg">{value}</span>
+      </div>
+      <div className="text-xs text-slate-500 mt-0.5">{label}</div>
+    </div>
+  );
+}
+

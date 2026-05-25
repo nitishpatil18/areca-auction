@@ -10,6 +10,7 @@ import walletRoutes from './routes/wallet.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import publicRoutes from './routes/public.routes.js';
 
 import { notFoundHandler, errorHandler } from './middleware/error.js';
 import { requestId } from './middleware/requestId.js';
@@ -61,6 +62,7 @@ export function createApp() {
   app.use('/api/admin', adminRoutes);
   app.use('/api/analytics', analyticsRoutes);
   app.use('/api/notifications', notificationRoutes);
+  app.use('/api/public', publicRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
