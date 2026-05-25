@@ -3,6 +3,11 @@ import Lot from '../models/Lot.js';
 import User from '../models/User.js';
 import Bid from '../models/Bid.js';
 import Transaction from '../models/Transaction.js';
+import {
+  auctionsSettledTotal,
+  auctionSettleFailureReasonTotal,
+  activeAuctions,
+} from '../utils/metrics.js';
 import * as notificationService from './notificationService.js';
 import * as chainService from './chainService.js';
 import { notFound, badRequest, forbidden } from '../utils/httpError.js';
@@ -116,6 +121,8 @@ export async function settleAndClose(auctionId) {
   if (!auction.highestBidder || !auction.currentBidPerKg || !lot) {
     auction.status = 'cancelled';
     auction.settlementFailureReason = lot ? 'no_bids' : 'missing_lot';
+    auctionsSettledTotal.inc({ outcome: 'cancelled' });
+    auctionSettleFailureReasonTotal.inc({ reason: auction.settlementFailureReason });
     await auction.save();
     if (lot) {
       lot.status = 'listed';
@@ -137,6 +144,8 @@ export async function settleAndClose(auctionId) {
       : !farmer
         ? 'farmer_not_found'
         : 'winner_insufficient_funds';
+    auctionsSettledTotal.inc({ outcome: 'cancelled' });
+    auctionSettleFailureReasonTotal.inc({ reason: auction.settlementFailureReason });
     await auction.save();
     lot.status = 'listed';
     await lot.save();
@@ -175,6 +184,8 @@ export async function settleAndClose(auctionId) {
 
   lot.status = 'sold';
   await lot.save();
+
+  auctionsSettledTotal.inc({ outcome: 'sold' });
 
   notificationService.create({
     user: winner._id,

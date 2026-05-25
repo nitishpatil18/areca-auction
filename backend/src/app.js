@@ -14,6 +14,8 @@ import notificationRoutes from './routes/notification.routes.js';
 import { notFoundHandler, errorHandler } from './middleware/error.js';
 import { requestId } from './middleware/requestId.js';
 import { requestLogger } from './middleware/requestLogger.js';
+import { register as metricsRegister, activeAuctions } from './utils/metrics.js';
+import Auction from './models/Auction.js';
 
 export function createApp() {
   const app = express();
@@ -39,6 +41,13 @@ export function createApp() {
   }));
 
   app.get('/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
+  app.get('/metrics', async (req, res) => {
+    // refresh gauges before scraping
+    const live = await Auction.countDocuments({ status: 'live' });
+    activeAuctions.set(live);
+    res.set('Content-Type', metricsRegister.contentType);
+    res.end(await metricsRegister.metrics());
+  });
 
   app.use(express.static('public'));
   app.use('/uploads', express.static('/app/uploads', {

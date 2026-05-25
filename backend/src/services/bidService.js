@@ -1,5 +1,6 @@
 import Auction from '../models/Auction.js';
 import Bid from '../models/Bid.js';
+import { bidsPlacedTotal } from '../utils/metrics.js';
 import * as notificationService from './notificationService.js';
 import Lot from '../models/Lot.js';
 import User from '../models/User.js';
@@ -86,6 +87,7 @@ export async function placeBid({ auctionId, bidderId, pricePerKg }) {
     pricePerKg,
     amountTotal: totalAmount,
   });
+  bidsPlacedTotal.inc();
 
   // fire outbid notification to the previous leader (if any and not the same person)
   if (previousLeader && previousLeader !== bidderId.toString()) {

@@ -1,4 +1,5 @@
 import { logger } from '../utils/logger.js';
+import { httpRequestsTotal, httpRequestDurationSeconds } from '../utils/metrics.js';
 
 // emits one structured log line per http request when the response finishes.
 // must be mounted AFTER requestId middleware so req.id is available.
@@ -11,6 +12,12 @@ export function requestLogger(req, res, next) {
     const durationMs = Number(process.hrtime.bigint() - startNs) / 1e6;
 
     // skip health checks in production logs to reduce noise; keep them in dev.
+    // route template for low-cardinality labels (e.g. /api/auctions/:id not /api/auctions/abc123)
+    const route = req.route?.path ? `${req.baseUrl || ''}${req.route.path}` : path;
+
+    httpRequestsTotal.inc({ method: req.method, route, status: res.statusCode });
+    httpRequestDurationSeconds.observe({ method: req.method, route, status: res.statusCode }, durationMs / 1000);
+
     if (process.env.NODE_ENV === 'production' && path === '/health') return;
 
     const level = res.statusCode >= 500 ? 'error'
