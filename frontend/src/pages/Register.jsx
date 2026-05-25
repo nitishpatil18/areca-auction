@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, MapPin, UserPlus, Sprout, Tractor, ShoppingBag } from 'lucide-react';
+import { Mail, Lock, User, MapPin, UserPlus, Sprout, Tractor, ShoppingBag, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { registerThunk } from '../store/authSlice.js';
 
@@ -9,6 +9,7 @@ export default function Register() {
   const [form, setForm] = useState({
     name: '', email: '', password: '', role: 'buyer', region: '',
   });
+  const [show, setShow] = useState(false);
   const dispatch = useDispatch();
   const nav = useNavigate();
   const { status } = useSelector((s) => s.auth);
@@ -42,7 +43,29 @@ export default function Register() {
         <form onSubmit={onSubmit} className="space-y-4">
           <Field icon={User}   label="Full Name"  value={form.name}     onChange={set('name')}     placeholder="Your name" required />
           <Field icon={Mail}   label="Email"      value={form.email}    onChange={set('email')}    placeholder="you@example.com" type="email" required />
-          <Field icon={Lock}   label="Password"   value={form.password} onChange={set('password')} placeholder="Min 8 characters" type="password" required />
+          <div>
+            <label className="text-xs font-medium text-slate-700 mb-1 block">Password</label>
+            <div className="relative">
+              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type={show ? 'text' : 'password'}
+                className="input pl-9 pr-10"
+                placeholder="Min 8 characters"
+                value={form.password}
+                onChange={set('password')}
+                required
+                minLength={8}
+              />
+              <button
+                type="button"
+                onClick={() => setShow((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {show ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <PasswordStrength password={form.password} />
+          </div>
           <Field icon={MapPin} label="Region"     value={form.region}   onChange={set('region')}   placeholder="e.g. Shivamogga" />
 
           <div>
@@ -111,3 +134,30 @@ function RoleOption({ icon: Icon, label, description, active, onClick }) {
     </button>
   );
 }
+function PasswordStrength({ password }) {
+  if (!password) return null;
+  // simple scoring: length, lowercase, uppercase, digit, symbol
+  let score = 0;
+  if (password.length >= 8)  score++;
+  if (password.length >= 12) score++;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^a-zA-Z0-9]/.test(password)) score++;
+  const tiers = [
+    { label: 'Very weak', color: 'bg-red-500',    width: '20%' },
+    { label: 'Weak',      color: 'bg-orange-500', width: '40%' },
+    { label: 'Fair',      color: 'bg-yellow-500', width: '60%' },
+    { label: 'Good',      color: 'bg-emerald-500', width: '80%' },
+    { label: 'Strong',    color: 'bg-emerald-600', width: '100%' },
+  ];
+  const tier = tiers[Math.min(score - 1, tiers.length - 1)] || tiers[0];
+  return (
+    <div className="mt-2">
+      <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
+        <div className={`h-full ${tier.color} transition-all`} style={{ width: tier.width }} />
+      </div>
+      <p className="text-xs text-slate-500 mt-1">Strength: {tier.label}</p>
+    </div>
+  );
+}
+

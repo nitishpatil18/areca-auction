@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, LogIn, Sprout } from 'lucide-react';
+import { Mail, Lock, LogIn, Sprout, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { loginThunk } from '../store/authSlice.js';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [show, setShow] = useState(false);
+  const [remember, setRemember] = useState(true);
   const dispatch = useDispatch();
   const nav = useNavigate();
   const { status } = useSelector((s) => s.auth);
@@ -57,14 +59,36 @@ export default function Login() {
             <div className="relative">
               <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
-                type="password"
-                className="input pl-9"
+                type={show ? 'text' : 'password'}
+                className="input pl-9 pr-10"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShow((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {show ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
+          </div>
+
+          <div className="flex items-center justify-between text-xs">
+            <label className="flex items-center gap-2 text-slate-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              Remember me
+            </label>
+            <Link to="/forgot-password" className="text-emerald-600 hover:underline">
+              Forgot password?
+            </Link>
           </div>
 
           <button disabled={status === 'loading'} className="btn-primary w-full">

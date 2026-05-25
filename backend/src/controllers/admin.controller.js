@@ -147,3 +147,16 @@ export async function listFailedSettlements(req, res, next) {
     res.json({ items });
   } catch (e) { next(e); }
 }
+
+export async function listPendingPasswordResets(req, res, next) {
+  try {
+    const items = await User.find({
+      passwordResetToken: { $ne: null },
+      passwordResetExpires: { $gt: new Date() },
+    })
+      .select('name email role passwordResetToken passwordResetExpires')
+      .sort({ passwordResetExpires: -1 })
+      .lean();
+    res.json({ items });
+  } catch (e) { next(e); }
+}

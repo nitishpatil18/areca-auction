@@ -20,3 +20,17 @@ export async function me(req, res, next) {
     res.json({ user });
   } catch (e) { next(e); }
 }
+
+export async function forgotPassword(req, res, next) {
+  try {
+    const result = await authService.requestPasswordReset(req.body);
+    res.json(result);
+  } catch (e) { next(e); }
+}
+
+export async function resetPassword(req, res, next) {
+  try {
+    const result = await authService.resetPassword(req.body);
+    res.json(result);
+  } catch (e) { next(e); }
+}

@@ -10,6 +10,8 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 import BrowseLots from './pages/BrowseLots.jsx';
 import LotDetail from './pages/LotDetail.jsx';
 import FarmerDashboard from './pages/FarmerDashboard.jsx';
@@ -55,6 +57,8 @@ export default function App() {
         <Route path="/"         element={<Home />} />
         <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/lots"     element={<BrowseLots />} />
         <Route path="/lots/:id" element={<LotDetail />} />
 
