@@ -8,6 +8,9 @@ import { getHeldAmount } from './walletService.js';
 import { badRequest, notFound, forbidden } from '../utils/httpError.js';
 
 const MIN_INCREMENT = Number(process.env.MIN_BID_INCREMENT || 1);
+// max live auctions a single buyer can simultaneously lead.
+// prevents a buyer from blocking held-balance across many auctions to starve others.
+const MAX_CONCURRENT_BIDS = Number(process.env.MAX_CONCURRENT_BIDS || 5);
 const ANTISNIPE_WINDOW_MS  = Number(process.env.ANTISNIPE_WINDOW_MS  || 30_000); // last 30s
 const ANTISNIPE_EXTEND_MS  = Number(process.env.ANTISNIPE_EXTEND_MS  || 30_000); // extend by 30s
 
@@ -28,6 +31,21 @@ export async function placeBid({ auctionId, bidderId, pricePerKg }) {
   if (!bidder) throw notFound('bidder not found');
   if (bidder.role !== 'buyer') throw forbidden('only buyers can bid');
   if (auction.farmer.toString() === bidderId) throw forbidden('cannot bid on your own auction');
+
+  // held-balance attack protection: limit concurrent leading bids per buyer.
+  // a buyer leading more than MAX_CONCURRENT_BIDS live auctions simultaneously
+  // could lock up held funds and prevent legitimate bids by other users.
+  const existingLeadCount = await Auction.countDocuments({
+    status: 'live',
+    highestBidder: bidderId,
+    _id: { $ne: auctionId },  // exclude current auction (re-bidding on it is fine)
+  });
+  if (existingLeadCount >= MAX_CONCURRENT_BIDS) {
+    throw badRequest(
+      `you are already leading ${existingLeadCount} live auctions. ` +
+      `maximum concurrent leading bids is ${MAX_CONCURRENT_BIDS}.`
+    );
+  }
 
   const minRequired = Math.max(
     (auction.currentBidPerKg || 0) + MIN_INCREMENT,
