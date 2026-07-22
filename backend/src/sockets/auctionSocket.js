@@ -53,6 +53,8 @@ export function attachSocket(io) {
     });
 
     socket.on('bid:place', async (payload, cb) => {
+      // latency tracking: measure time from bid received to broadcast emitted.
+      const bidStart = Date.now();
       try {
         const auctionId = payload?.auctionId;
         const pricePerKg = Number(payload?.pricePerKg);
@@ -77,8 +79,19 @@ export function attachSocket(io) {
           });
         }
 
-        cb?.({ ok: true });
+        const processingMs = Date.now() - bidStart;
+        logger.info({
+          msg: 'bid processed',
+          auctionId,
+          pricePerKg,
+          processingMs,
+          extended,
+          bidCount: auction.bidCount,
+        });
+        cb?.({ ok: true, processingMs });
       } catch (e) {
+        const processingMs = Date.now() - bidStart;
+        logger.warn({ msg: 'bid rejected', error: e.message, processingMs });
         cb?.({ ok: false, error: e.message });
       }
     });
